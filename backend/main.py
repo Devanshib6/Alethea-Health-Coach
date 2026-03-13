@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from config import settings
-from routers import auth
+from routers import auth, profile
 import traceback
 
 app = FastAPI(
@@ -11,7 +11,6 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,7 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global error handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_detail = traceback.format_exc()
@@ -32,6 +30,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include Routers
 app.include_router(auth.router)
+app.include_router(profile.router)
 
 @app.get("/")
 def root():
