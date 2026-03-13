@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from config import settings
 from routers import auth
+import traceback
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -18,10 +20,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Global error handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_detail = traceback.format_exc()
+    print(f"GLOBAL ERROR: {error_detail}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": error_detail}
+    )
+
 # Include Routers
 app.include_router(auth.router)
 
-# Root endpoint
 @app.get("/")
 def root():
     return {
@@ -30,7 +41,6 @@ def root():
         "docs": "/docs"
     }
 
-# Health check endpoint
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
