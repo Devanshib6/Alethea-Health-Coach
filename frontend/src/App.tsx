@@ -9,39 +9,33 @@ import BasicInfoPage from './pages/profile/BasicInfoPage';
 import GoalsPage from './pages/profile/GoalsPage';
 import PreferencesPage from './pages/profile/PreferencesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import AddMealPage from './pages/meals/AddMealPage';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
 
-          {/* Profile Setup Routes */}
           <Route path="/profile/basic-info" element={
-            <ProtectedRoute>
-              <BasicInfoPage />
-            </ProtectedRoute>
+            <ProtectedRoute><BasicInfoPage /></ProtectedRoute>
           } />
           <Route path="/profile/goals" element={
-            <ProtectedRoute>
-              <GoalsPage />
-            </ProtectedRoute>
+            <ProtectedRoute><GoalsPage /></ProtectedRoute>
           } />
           <Route path="/profile/preferences" element={
-            <ProtectedRoute>
-              <PreferencesPage />
-            </ProtectedRoute>
+            <ProtectedRoute><PreferencesPage /></ProtectedRoute>
           } />
 
-          {/* Dashboard */}
           <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
+            <ProtectedRoute><DashboardPage /></ProtectedRoute>
+          } />
+
+          <Route path="/meals/add" element={
+            <ProtectedRoute><AddMealPage /></ProtectedRoute>
           } />
         </Routes>
       </Router>

@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from config import settings
-from routers import auth, profile, dashboard
+from routers import auth, profile, dashboard, meals
 import traceback
 
 app = FastAPI(
@@ -28,10 +28,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": str(exc), "traceback": error_detail}
     )
 
-# Include Routers
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(dashboard.router)
+app.include_router(meals.router)
 
 @app.get("/")
 def root():
