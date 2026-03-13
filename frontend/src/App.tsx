@@ -8,6 +8,7 @@ import SignupPage from './pages/auth/SignupPage';
 import BasicInfoPage from './pages/profile/BasicInfoPage';
 import GoalsPage from './pages/profile/GoalsPage';
 import PreferencesPage from './pages/profile/PreferencesPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 
 function App() {
   return (
@@ -36,14 +37,10 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Dashboard placeholder */}
+          {/* Dashboard */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <div className="min-h-screen flex items-center justify-center">
-                <h1 className="text-2xl font-bold text-green-600">
-                  Dashboard Coming Soon! ✅
-                </h1>
-              </div>
+              <DashboardPage />
             </ProtectedRoute>
           } />
         </Routes>
