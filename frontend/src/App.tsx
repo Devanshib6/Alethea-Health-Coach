@@ -10,6 +10,7 @@ import GoalsPage from './pages/profile/GoalsPage';
 import PreferencesPage from './pages/profile/PreferencesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import AddMealPage from './pages/meals/AddMealPage';
+import MealHistoryPage from './pages/meals/MealHistoryPage';
 
 function App() {
   return (
@@ -36,6 +37,9 @@ function App() {
 
           <Route path="/meals/add" element={
             <ProtectedRoute><AddMealPage /></ProtectedRoute>
+          } />
+          <Route path="/meals/history" element={
+            <ProtectedRoute><MealHistoryPage /></ProtectedRoute>
           } />
         </Routes>
       </Router>

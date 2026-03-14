@@ -75,7 +75,7 @@ async def get_meal_history(
 
 @router.delete("/{meal_id}")
 async def delete_meal(
-    meal_id: int,
+    meal_id: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
