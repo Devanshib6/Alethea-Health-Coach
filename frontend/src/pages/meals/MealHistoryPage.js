@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Navbar from '../../components/Navbar';
 
 const MealHistoryPage = () => {
   const navigate = useNavigate();
@@ -49,21 +50,14 @@ const MealHistoryPage = () => {
     return icons[mealType] || '🍽️';
   };
 
-  const getTotalCalories = (meals) => {
-    return meals.reduce((sum, meal) => sum + (meal.total_calories || 0), 0);
-  };
-
-  const getTotalProtein = (meals) => {
-    return meals.reduce((sum, meal) => sum + (meal.total_protein || 0), 0);
-  };
-
-  const getTotalCarbs = (meals) => {
-    return meals.reduce((sum, meal) => sum + (meal.total_carbs || 0), 0);
-  };
-
-  const getTotalFat = (meals) => {
-    return meals.reduce((sum, meal) => sum + (meal.total_fat || 0), 0);
-  };
+  const getTotalCalories = (meals) =>
+    meals.reduce((sum, meal) => sum + (meal.total_calories || 0), 0);
+  const getTotalProtein = (meals) =>
+    meals.reduce((sum, meal) => sum + (meal.total_protein || 0), 0);
+  const getTotalCarbs = (meals) =>
+    meals.reduce((sum, meal) => sum + (meal.total_carbs || 0), 0);
+  const getTotalFat = (meals) =>
+    meals.reduce((sum, meal) => sum + (meal.total_fat || 0), 0);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -80,19 +74,8 @@ const MealHistoryPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
 
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🌿</span>
-          <span className="text-xl font-bold text-green-700">Alethea</span>
-        </div>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-gray-600 hover:text-green-600 transition"
-        >
-          ← Back to Dashboard
-        </button>
-      </nav>
+      {/* ✅ New Navbar */}
+      <Navbar />
 
       <div className="max-w-3xl mx-auto px-6 py-8">
 
@@ -134,7 +117,7 @@ const MealHistoryPage = () => {
           </button>
         </div>
 
-        {/* Today's Summary Cards */}
+        {/* Today's Summary */}
         {activeTab === 'today' && (
           <div className="grid grid-cols-4 gap-3 mb-6">
             <div className="bg-white rounded-xl p-4 shadow-sm text-center">
@@ -207,21 +190,15 @@ const MealHistoryPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                   <div className="text-right hidden md:block">
-                    <div className="flex gap-4 text-sm">
+                    <div className="flex gap-3 text-sm">
                       <span className="text-orange-500 font-medium">
                         {meal.total_calories} kcal
                       </span>
-                      <span className="text-blue-500">
-                        P: {meal.total_protein}g
-                      </span>
-                      <span className="text-yellow-500">
-                        C: {meal.total_carbs}g
-                      </span>
-                      <span className="text-red-500">
-                        F: {meal.total_fat}g
-                      </span>
+                      <span className="text-blue-500">P: {meal.total_protein}g</span>
+                      <span className="text-yellow-500">C: {meal.total_carbs}g</span>
+                      <span className="text-red-500">F: {meal.total_fat}g</span>
                     </div>
                   </div>
                   <button

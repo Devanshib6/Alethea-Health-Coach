@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Navbar from '../../components/Navbar';
 
 const nepaliIndianFoods = {
   breakfast: [
@@ -88,7 +89,7 @@ const AddMealPage = () => {
         notes: formData.notes
       });
       toast.success('Meal logged successfully! 🍛');
-      setTimeout(() => navigate('/dashboard'), 1500);
+      setTimeout(() => navigate('/meals/history'), 1500);
     } catch (error) {
       toast.error('Failed to log meal');
     } finally {
@@ -102,24 +103,12 @@ const AddMealPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
 
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🌿</span>
-          <span className="text-xl font-bold text-green-700">Alethea</span>
-        </div>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-gray-600 hover:text-green-600 transition"
-        >
-          ← Back to Dashboard
-        </button>
-      </nav>
+      {/* ✅ New Navbar */}
+      <Navbar />
 
       <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="bg-white rounded-2xl shadow-sm p-6">
 
-          {/* Header */}
           <div className="text-center mb-6">
             <span className="text-4xl">🍛</span>
             <h1 className="text-2xl font-bold text-gray-800 mt-2">Log a Meal</h1>
@@ -168,12 +157,10 @@ const AddMealPage = () => {
             </div>
           </div>
 
-          {/* Manual Entry Form */}
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Meal Name
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Meal Name</label>
               <input
                 type="text"
                 name="meal_name"
@@ -187,9 +174,7 @@ const AddMealPage = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Calories (kcal)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal)</label>
                 <input
                   type="number"
                   name="total_calories"
@@ -201,9 +186,7 @@ const AddMealPage = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Protein (g)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
                 <input
                   type="number"
                   name="total_protein"
@@ -217,9 +200,7 @@ const AddMealPage = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Carbs (g)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
                 <input
                   type="number"
                   name="total_carbs"
@@ -230,9 +211,7 @@ const AddMealPage = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fat (g)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
                 <input
                   type="number"
                   name="total_fat"
@@ -245,9 +224,7 @@ const AddMealPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes (optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
               <input
                 type="text"
                 name="notes"

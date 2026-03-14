@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Navbar from '../../components/Navbar';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -21,12 +22,6 @@ const DashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
   };
 
   if (loading) return (
@@ -49,24 +44,8 @@ const DashboardPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
 
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🌿</span>
-          <span className="text-xl font-bold text-green-700">Alethea</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-gray-600">
-            👋 Hello, {data?.user?.username || 'User'}!
-          </span>
-          <button
-            onClick={handleLogout}
-            className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm hover:bg-red-100 transition"
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
+      {/* ✅ New Navbar */}
+      <Navbar />
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
@@ -91,8 +70,6 @@ const DashboardPage = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-
-          {/* BMI Card */}
           <div className="bg-white rounded-xl p-5 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">BMI</p>
             <p className={`text-3xl font-bold ${bmiColor()}`}>
@@ -103,7 +80,6 @@ const DashboardPage = () => {
             </p>
           </div>
 
-          {/* Current Weight */}
           <div className="bg-white rounded-xl p-5 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Current Weight</p>
             <p className="text-3xl font-bold text-gray-800">
@@ -112,7 +88,6 @@ const DashboardPage = () => {
             <p className="text-sm text-gray-500 mt-1">kg</p>
           </div>
 
-          {/* Target Weight */}
           <div className="bg-white rounded-xl p-5 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Target Weight</p>
             <p className="text-3xl font-bold text-blue-600">
@@ -121,7 +96,6 @@ const DashboardPage = () => {
             <p className="text-sm text-gray-500 mt-1">kg</p>
           </div>
 
-          {/* Calories Today */}
           <div className="bg-white rounded-xl p-5 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Calories Today</p>
             <p className="text-3xl font-bold text-orange-500">
@@ -136,7 +110,6 @@ const DashboardPage = () => {
         {/* Goal Progress + Profile */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
-          {/* Goal Progress */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               🎯 Goal Progress
@@ -162,7 +135,6 @@ const DashboardPage = () => {
               <p className="text-gray-400">No goals set yet</p>
             )}
 
-            {/* Calorie Progress */}
             <div className="mt-6">
               <div className="flex justify-between text-sm text-gray-500 mb-2">
                 <span>Daily Calories</span>
@@ -179,7 +151,6 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          {/* Profile Summary */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               👤 Profile Summary
@@ -274,7 +245,15 @@ const DashboardPage = () => {
             </button>
           </div>
           {data?.meals_today > 0 ? (
-            <p className="text-gray-600">{data.meals_today} meals logged today</p>
+            <div>
+              <p className="text-gray-600">{data.meals_today} meals logged today</p>
+              <button
+                onClick={() => navigate('/meals/history')}
+                className="mt-3 text-green-600 text-sm hover:underline"
+              >
+                View all meals →
+              </button>
+            </div>
           ) : (
             <div className="text-center py-8">
               <span className="text-4xl">🍽️</span>
