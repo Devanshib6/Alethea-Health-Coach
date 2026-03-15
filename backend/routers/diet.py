@@ -10,6 +10,9 @@ DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sun
 
 
 def calculate_bmr(weight, height, age, gender):
+    weight = float(weight)
+    height = float(height)
+    age = float(age)
     if gender == "male":
         return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
     else:
@@ -67,7 +70,6 @@ async def search_foods(
 ):
     user_id = current_user.get("user_id")
 
-    # Get user dietary preference
     prefs = db.execute(
         text("SELECT diet_type FROM dietary_preferences WHERE user_id = :user_id"),
         {"user_id": user_id}
@@ -129,14 +131,15 @@ async def get_diet_plan(
         {"user_id": user_id}
     ).fetchone()
 
-    weight = profile.weight if profile else 65
-    height = profile.height if profile else 165
-    age = profile.age if profile else 25
+    # ✅ Convert Decimal to float to avoid TypeError
+    weight = float(profile.weight) if profile and profile.weight else 65.0
+    height = float(profile.height) if profile and profile.height else 165.0
+    age = float(profile.age) if profile and profile.age else 25.0
     gender = profile.gender if profile else "male"
     activity = profile.activity_level if profile else "lightly_active"
     goal = goals.primary_goal if goals else "maintain_weight"
     diet_type = prefs.diet_type if prefs else "omnivore"
-    calorie_target = goals.daily_calorie_target if goals else 2000
+    calorie_target = float(goals.daily_calorie_target) if goals and goals.daily_calorie_target else 2000.0
 
     bmr = calculate_bmr(weight, height, age, gender)
     tdee = calculate_tdee(bmr, activity)
@@ -188,10 +191,10 @@ async def get_diet_plan(
         snack = snacks[i % len(snacks)] if snacks else {}
 
         total = (
-            (breakfast.get("calories", 0)) +
-            (lunch.get("calories", 0)) +
-            (dinner.get("calories", 0)) +
-            (snack.get("calories", 0))
+            float(breakfast.get("calories", 0)) +
+            float(lunch.get("calories", 0)) +
+            float(dinner.get("calories", 0)) +
+            float(snack.get("calories", 0))
         )
 
         meal_plan.append({
@@ -200,7 +203,7 @@ async def get_diet_plan(
             "lunch": lunch,
             "dinner": dinner,
             "snack": snack,
-            "total_calories": total,
+            "total_calories": round(total),
             "target_calories": round(final_calorie_target),
             "status": "✅ On Target" if abs(total - final_calorie_target) < 200
                       else "⚠️ Adjust portions"

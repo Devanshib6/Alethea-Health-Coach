@@ -14,7 +14,6 @@ import MealHistoryPage from './pages/meals/MealHistoryPage';
 import DietPlanPage from './pages/diet/DietPlanPage';
 import HealthAnalysisPage from './pages/health/HealthAnalysisPage';
 import SettingsPage from './pages/settings/SettingsPage';
-
 function App() {
   return (
     <AuthProvider>
