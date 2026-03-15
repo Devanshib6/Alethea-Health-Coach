@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from config import settings
-from routers import auth, profile, dashboard, meals
+from routers import auth, profile, dashboard, meals, diet
 import traceback
 
 app = FastAPI(
@@ -32,6 +32,7 @@ app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(dashboard.router)
 app.include_router(meals.router)
+app.include_router(diet.router)
 
 @app.get("/")
 def root():
