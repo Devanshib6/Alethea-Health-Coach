@@ -7,6 +7,8 @@ import DashboardPage from '../pages/DashboardPage'
 import BasicInfoPage from '../pages/BasicInfoPage'
 import GoalsHealthPage from '../pages/GoalsHealthPage'
 import DietaryPreferencesPage from '../pages/DietaryPreferencesPage'
+import LogMealPage from '../pages/LogMealPage'
+import MealHistoryPage from '../pages/MealHistoryPage'
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
@@ -39,6 +41,16 @@ const AppRoutes = () => {
         <Route path="/dietary-preferences" element={
           <ProtectedRoute>
             <DietaryPreferencesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/log-meal" element={
+          <ProtectedRoute>
+            <LogMealPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/meal-history" element={
+          <ProtectedRoute>
+            <MealHistoryPage />
           </ProtectedRoute>
         } />
       </Routes>

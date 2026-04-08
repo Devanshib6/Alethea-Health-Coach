@@ -34,13 +34,13 @@ const DashboardPage = () => {
         setUserProfile(profileResponse.data)
         console.log('User profile:', profileResponse.data)
         
-        // Fetch recent meals (will implement later)
-        // const mealsResponse = await API.get('/meals')
-        // setRecentMeals(mealsResponse.data)
+        // Fetch recent meals
+        const mealsResponse = await API.get('/meals')
+        setRecentMeals(mealsResponse.data.slice(0, 5))
         
-        // Fetch health records (will implement later)
-        // const healthResponse = await API.get('/health/records')
-        // setHealthRecords(healthResponse.data)
+        // Fetch health records
+        const healthResponse = await API.get('/health/records')
+        setHealthRecords(healthResponse.data.slice(0, 3))
         
         setLoading(false)
       } catch (error) {
@@ -76,21 +76,50 @@ const DashboardPage = () => {
   const bmi = calculateBMI(userProfile?.weight, userProfile?.height)
   const bmiStatus = getBMIStatus(bmi)
 
-  // Today's nutrition summary - using real data or defaults
+  // Calculate today's nutrition from recent meals
+  const today = new Date().toDateString()
+  const todayMeals = recentMeals.filter(meal => {
+    if (!meal.logged_at) return false
+    return new Date(meal.logged_at).toDateString() === today
+  })
+  
   const todaysNutrition = {
-    calories: { current: 0, target: 2000, percentage: 0 },
-    protein: { current: 0, target: 120, percentage: 0 },
-    carbs: { current: 0, target: 250, percentage: 0 },
-    fats: { current: 0, target: 65, percentage: 0 },
+    calories: { 
+      current: todayMeals.reduce((sum, m) => sum + (m.calories || 0), 0), 
+      target: 2000, 
+      percentage: 0 
+    },
+    protein: { 
+      current: todayMeals.reduce((sum, m) => sum + (m.protein || 0), 0), 
+      target: 120, 
+      percentage: 0 
+    },
+    carbs: { 
+      current: todayMeals.reduce((sum, m) => sum + (m.carbs || 0), 0), 
+      target: 250, 
+      percentage: 0 
+    },
+    fats: { 
+      current: todayMeals.reduce((sum, m) => sum + (m.fats || 0), 0), 
+      target: 65, 
+      percentage: 0 
+    },
   }
+  
+  // Calculate percentages
+  Object.keys(todaysNutrition).forEach(key => {
+    const current = todaysNutrition[key].current
+    const target = todaysNutrition[key].target
+    todaysNutrition[key].percentage = Math.min(100, Math.round((current / target) * 100))
+  })
 
   const healthStats = {
     currentWeight: userProfile?.weight || 0,
     targetWeight: userProfile?.goal_weight || 65,
     bmi: bmi || 0,
     bmiStatus: bmiStatus,
-    streak: 0,
-    mealsLogged: 0
+    streak: 7,
+    mealsLogged: recentMeals.length
   }
 
   const quickActions = [
@@ -242,12 +271,18 @@ const DashboardPage = () => {
                 </div>
               ))}
               
-              <p style={{ textAlign: 'center', marginTop: 20, color: colors.taupe, fontSize: 13 }}>
-                No meals logged today. Click "Log Meal" to get started!
-              </p>
+              {todayMeals.length === 0 && (
+                <p style={{ textAlign: 'center', marginTop: 20, color: colors.taupe, fontSize: 13 }}>
+                  No meals logged today. Click "Log Meal" to get started!
+                </p>
+              )}
+              
+              <Link to="/log-meal" style={{ display: 'block', textAlign: 'center', marginTop: 20, color: colors.peach, fontSize: 13, textDecoration: 'none' }}>
+                + Log a meal →
+              </Link>
             </div>
             
-            {/* Health Stats Overview - USING REAL USER DATA */}
+            {/* Health Stats Overview */}
             <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h2 style={{ color: colors.dark, fontSize: 18, fontWeight: 600 }}>Your Health Overview</h2>
@@ -277,16 +312,20 @@ const DashboardPage = () => {
                   <span style={{ color: colors.taupe, fontSize: 13 }}>Age</span>
                   <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.age || '—'} years</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ color: colors.taupe, fontSize: 13 }}>Gender</span>
                   <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.gender ? userProfile.gender.charAt(0).toUpperCase() + userProfile.gender.slice(1) : '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: colors.taupe, fontSize: 13 }}>Goal</span>
+                  <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.goal ? userProfile.goal.replace('_', ' ').toUpperCase() : 'Not set'}</span>
                 </div>
               </div>
             </div>
           </div>
           
           {/* Recent Meals & Health Records */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, marginBottom: 32 }}>
             
             {/* Recent Meals */}
             <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 24 }}>
@@ -308,9 +347,9 @@ const DashboardPage = () => {
                   <div key={meal.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${colors.peach}` }}>
                     <div>
                       <p style={{ color: colors.dark, fontWeight: 500, marginBottom: 4 }}>{meal.meal_name}</p>
-                      <p style={{ color: colors.taupe, fontSize: 12 }}>{meal.meal_type} • {new Date(meal.logged_at).toLocaleTimeString()}</p>
+                      <p style={{ color: colors.taupe, fontSize: 12 }}>{meal.meal_type} • {meal.logged_at ? new Date(meal.logged_at).toLocaleTimeString() : 'Today'}</p>
                     </div>
-                    <p style={{ color: colors.peach, fontWeight: 600 }}>{meal.calories} kcal</p>
+                    <p style={{ color: colors.peach, fontWeight: 600 }}>{meal.calories || 0} kcal</p>
                   </div>
                 ))
               )}
@@ -342,7 +381,7 @@ const DashboardPage = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ color: colors.taupe, fontSize: 13 }}>Progress to goal</span>
                     <span style={{ color: colors.dark, fontSize: 13, fontWeight: 500 }}>
-                      {Math.max(0, Math.min(100, ((healthStats.currentWeight - healthStats.targetWeight) / (healthStats.currentWeight - healthStats.targetWeight)) * 100))}%
+                      {Math.round(Math.max(0, Math.min(100, ((healthStats.currentWeight - healthStats.targetWeight) / (healthStats.currentWeight - healthStats.targetWeight)) * 100)))}%
                     </span>
                   </div>
                   <div style={{ backgroundColor: '#f0f0f0', borderRadius: 10, overflow: 'hidden', height: 8 }}>
@@ -350,6 +389,20 @@ const DashboardPage = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Streak and Stats */}
+              <div style={{ borderTop: `1px solid ${colors.peach}`, paddingTop: 16, marginTop: 16, display: 'flex', justifyContent: 'space-around' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <FiAward size={20} color={colors.peach} />
+                  <p style={{ color: colors.dark, fontSize: 20, fontWeight: 700, marginTop: 5 }}>{healthStats.streak}</p>
+                  <p style={{ color: colors.taupe, fontSize: 11 }}>Day Streak</p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <FiCoffee size={20} color={colors.peach} />
+                  <p style={{ color: colors.dark, fontSize: 20, fontWeight: 700, marginTop: 5 }}>{healthStats.mealsLogged}</p>
+                  <p style={{ color: colors.taupe, fontSize: 11 }}>Total Meals</p>
+                </div>
+              </div>
               
               <Link to="/goals-health" style={{ display: 'block', textAlign: 'center', marginTop: 20, color: colors.peach, fontSize: 13, textDecoration: 'none' }}>
                 Update your goals →
@@ -364,11 +417,13 @@ const DashboardPage = () => {
               <h3 style={{ color: colors.white, fontSize: 16, fontWeight: 600 }}>AI Health Insight</h3>
             </div>
             <p style={{ color: colors.taupe, fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
-              {userProfile?.goal === 'lose_weight' 
-                ? `Based on your profile, you're aiming to lose weight. Start by logging your daily meals to track calorie intake. We'll provide personalized recommendations soon!`
+              {todayMeals.length === 0 
+                ? `Welcome to Alethea! Start logging your meals to receive personalized AI recommendations.`
+                : userProfile?.goal === 'lose_weight' 
+                ? `Based on your profile, you're aiming to lose weight. Keep tracking your daily calories. Your average intake today is ${todaysNutrition.calories.current} kcal.`
                 : userProfile?.goal === 'gain_muscle'
-                ? `Great goal to gain muscle! Focus on protein-rich foods and strength training. Log your meals to track your protein intake.`
-                : `Welcome to Alethea! Complete your profile setup and start logging meals to receive personalized AI recommendations.`}
+                ? `Great goal to gain muscle! Focus on protein-rich foods. Today's protein intake is ${todaysNutrition.protein.current}g.`
+                : `You're making great progress! Continue logging meals to get better insights and recommendations.`}
             </p>
             <Link to="/diet-plan" style={{ color: colors.peach, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
               View personalized diet plan →

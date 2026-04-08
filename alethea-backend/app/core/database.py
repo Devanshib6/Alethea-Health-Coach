@@ -3,13 +3,19 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+# Add pool_pre_ping to check connections before using them
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,  # This checks connection health
+    pool_recycle=3600,   # Recycle connections every hour
+    pool_size=5,         # Limit connection pool size
+    max_overflow=10      # Allow up to 10 overflow connections
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-# dependency to get db session in routes
 def get_db():
     db = SessionLocal()
     try:
