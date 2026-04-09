@@ -1,0 +1,10 @@
+:root {
+  --color-dark: #1a0405;
+  --color-taupe: #7a6058;
+  --color-peach: #d4a090;
+  --color-white: #ffffff;
+  --font-primary: 'Georgia', serif;
+  --font-secondary: sans-serif;
+  --border-radius: 8px;
+  --shadow: 0 4px 12px rgba(26, 4, 5, 0.1);
+}

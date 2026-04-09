@@ -14,7 +14,7 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
-    age: Optional[float] = None
+    age: Optional[int] = None
     gender: Optional[str] = None
     height: Optional[float] = None
     weight: Optional[float] = None
@@ -22,20 +22,14 @@ class UserUpdate(BaseModel):
     activity_level: Optional[str] = None
     diet_type: Optional[str] = None
     allergies: Optional[str] = None
-    profile_pic: Optional[str] = None
-    health_conditions: Optional[str] = None
-    sleep_hours: Optional[str] = None
-    stress_level: Optional[int] = None
-    dislikes: Optional[str] = None
-    meals_per_day: Optional[str] = None
-    water_intake: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: uuid.UUID
+    full_name: str
     email: str
     role: str
-    full_name: Optional[str] = None
-    age: Optional[float] = None
+    is_active: bool
+    age: Optional[int] = None
     gender: Optional[str] = None
     height: Optional[float] = None
     weight: Optional[float] = None

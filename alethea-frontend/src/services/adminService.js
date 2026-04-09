@@ -1,31 +1,16 @@
-import axios from 'axios'
+import API from './api'
 
-const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
-})
-
-// attach token to every request if available
-API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-})
-
-export const loginUser = async (email, password) => {
-    const response = await API.post('/auth/login', { email, password })
+export const getAdminStats = async () => {
+    const response = await API.get('/admin/stats')
     return response.data
 }
 
-export const registerUser = async (full_name, email, password) => {
-    const response = await API.post('/auth/register', { full_name, email, password })
+export const getAllUsers = async () => {
+    const response = await API.get('/admin/users')
     return response.data
 }
 
-export const getMyProfile = async () => {
-    const response = await API.get('/users/me')
+export const deleteUser = async (userId) => {
+    const response = await API.delete(`/admin/users/${userId}`)
     return response.data
 }
-
-export default API

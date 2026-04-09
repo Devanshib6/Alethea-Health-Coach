@@ -1,0 +1,53 @@
+.btn {
+  padding: 12px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: sans-serif;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--color-dark);
+  color: var(--color-white);
+  border: none;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-taupe);
+  border: 1.5px solid var(--color-peach);
+}
+
+.card {
+  border: 1px solid var(--color-peach);
+  border-radius: 12px;
+  padding: 20px;
+  background-color: var(--color-white);
+}
+
+.input-field {
+  border: none;
+  border-bottom: 2px solid var(--color-dark);
+  padding: 10px 0;
+  font-size: 15px;
+  outline: none;
+  background-color: transparent;
+  width: 100%;
+}
+
+.page-header {
+  background-color: var(--color-dark);
+  padding: 20px 32px;
+}
+
+.section-label {
+  color: var(--color-peach);
+  font-size: 11px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  font-family: sans-serif;
+}

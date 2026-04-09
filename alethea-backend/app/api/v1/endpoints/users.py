@@ -13,15 +13,11 @@ def get_my_profile(current_user: User = Depends(get_current_user)):
 
 @router.put("/me")
 def update_profile(data: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Update only the fields that are provided
-    update_data = data.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        if hasattr(current_user, key) and value is not None:
-            setattr(current_user, key, value)
-    
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(current_user, field, value)
     db.commit()
     db.refresh(current_user)
-    return {"message": "Profile updated successfully"}
+    return {"message": "Profile updated"}
 
 @router.delete("/me")
 def delete_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

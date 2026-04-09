@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.api.deps import get_current_user
 
 router = APIRouter()
 
 def require_admin(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Admins only")
     return current_user
 
@@ -27,5 +27,10 @@ def delete_user(user_id: str, db: Session = Depends(get_db), admin: User = Depen
 @router.get("/stats")
 def get_stats(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     total_users = db.query(User).count()
-    active_users = db.query(User).filter(User.is_super_admin == False).count()
-    return {"total_users": total_users, "active_users": active_users}
+    active_users = db.query(User).filter(User.is_active == True).count()
+    admin_users = db.query(User).filter(User.role == UserRole.admin).count()
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "admin_users": admin_users
+    }
