@@ -9,5 +9,9 @@ cloudinary.config(
 )
 
 def upload_image(file, folder="alethea"):
-    result = cloudinary.uploader.upload(file, folder=folder)
-    return result.get("secure_url")
+    try:
+        result = cloudinary.uploader.upload(file, folder=folder)
+        return result.get("secure_url")
+    except Exception as e:
+        print(f"Cloudinary upload error: {e}")
+        return None

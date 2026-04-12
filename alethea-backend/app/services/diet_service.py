@@ -16,14 +16,7 @@ def generate_plan(db: Session, user):
     daily_calories = calculate_daily_calories(weight, height, age, gender, activity, goal)
     nutrition = get_nutrition_recommendation(daily_calories, diet_type)
 
-    plan_data = {
-        "goal": goal,
-        "diet_type": diet_type,
-        "daily_calories": daily_calories,
-        "protein_g": nutrition["protein_g"],
-        "carbs_g": nutrition["carbs_g"],
-        "fat_g": nutrition["fat_g"]
-    }
+    plan_data = {"goal": goal, "diet_type": diet_type, **nutrition}
 
     new_plan = DietPlan(
         id=uuid.uuid4(),
@@ -32,7 +25,6 @@ def generate_plan(db: Session, user):
         description=f"Targeting {daily_calories} calories/day",
         plan_json=json.dumps(plan_data)
     )
-
     db.add(new_plan)
     db.commit()
     db.refresh(new_plan)

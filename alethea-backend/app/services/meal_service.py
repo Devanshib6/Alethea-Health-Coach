@@ -3,20 +3,8 @@ from app.models.meal import Meal
 from datetime import date
 import uuid
 
-def create_meal(db: Session, user_id, food_name, meal_type, calories=None, protein=None, carbs=None, fat=None, quantity=None, unit=None):
-    meal = Meal(
-        id=uuid.uuid4(),
-        user_id=user_id,
-        food_name=food_name,
-        meal_type=meal_type,
-        calories=calories,
-        protein=protein,
-        carbs=carbs,
-        fat=fat,
-        quantity=quantity,
-        unit=unit,
-        date=date.today()
-    )
+def create_meal(db, user_id, food_name, meal_type, calories=None, protein=None, carbs=None, fat=None, quantity=None, unit=None):
+    meal = Meal(id=uuid.uuid4(), user_id=user_id, food_name=food_name, meal_type=meal_type, calories=calories, protein=protein, carbs=carbs, fat=fat, quantity=quantity, unit=unit, date=date.today())
     db.add(meal)
     db.commit()
     db.refresh(meal)

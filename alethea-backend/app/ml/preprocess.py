@@ -10,11 +10,6 @@ def clean_health_records(records: list) -> list:
         })
     return cleaned
 
-def normalize_value(value: float, min_val: float, max_val: float) -> float:
-    if max_val == min_val:
-        return 0.0
-    return (value - min_val) / (max_val - min_val)
-
 def extract_features(user) -> dict:
     return {
         "weight": user.weight or 70,

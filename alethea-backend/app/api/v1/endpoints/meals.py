@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
 from app.core.database import get_db
 from app.models.meal import Meal
 from app.schemas.meal import MealCreate, MealResponse
 from app.api.deps import get_current_user
 from app.models.user import User
-import uuid
 from datetime import date
+import uuid
 
 router = APIRouter()
 
@@ -31,11 +30,9 @@ def log_meal(meal_data: MealCreate, db: Session = Depends(get_db), current_user:
     db.refresh(meal)
     return meal
 
-@router.get("/", response_model=List[MealResponse])
+@router.get("/")
 def get_meals(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Use created_at instead of logged_at
-    meals = db.query(Meal).filter(Meal.user_id == current_user.id).order_by(Meal.created_at.desc()).all()
-    return meals
+    return db.query(Meal).filter(Meal.user_id == current_user.id).order_by(Meal.created_at.desc()).all()
 
 @router.delete("/{meal_id}")
 def delete_meal(meal_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

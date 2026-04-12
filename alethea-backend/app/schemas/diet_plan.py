@@ -1,36 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.models.user import User
-from app.api.deps import get_current_user
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+import uuid
 
-router = APIRouter()
+class DietPlanCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    plan_json: Optional[str] = None
 
-def require_admin(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admins only")
-    return current_user
+class DietPlanResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    title: Optional[str] = None
+    description: Optional[str] = None
+    plan_json: Optional[str] = None
+    created_at: datetime
 
-@router.get("/users")
-def get_all_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    return db.query(User).all()
-
-@router.delete("/users/{user_id}")
-def delete_user(user_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    db.delete(user)
-    db.commit()
-    return {"message": "User deleted"}
-
-@router.get("/stats")
-def get_stats(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    total_users = db.query(User).count()
-    active_users = db.query(User).filter(User.is_active == True).count()
-    admin_users = db.query(User).filter(User.role == "admin").count()
-    return {
-        "total_users": total_users,
-        "active_users": active_users,
-        "admin_users": admin_users
-    }
+    class Config:
+        from_attributes = True
