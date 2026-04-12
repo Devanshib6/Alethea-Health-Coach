@@ -1,221 +1,205 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
-
-const colors = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import { useState, useEffect } from 'react'
 
 const LandingPage = () => {
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const features = [
+    { icon: '🍽️', title: 'Smart Meal Tracking', desc: 'Log meals with AI-powered nutrition analysis' },
+    { icon: '🤖', title: 'AI Diet Plans', desc: 'Personalized meal plans based on your goals' },
+    { icon: '📊', title: 'Health Analytics', desc: 'Track your progress with beautiful insights' },
+    { icon: '🔮', title: 'Health Predictions', desc: 'AI forecasts your future health trends' },
+    { icon: '🎯', title: 'Goal Setting', desc: 'Set and achieve your wellness targets' },
+    { icon: '💪', title: 'Fitness Integration', desc: 'Sync with your daily activities' },
+  ]
+
+  const stats = [
+    { value: '10K+', label: 'Active Users', icon: '👥' },
+    { value: '50K+', label: 'Meals Logged', icon: '🍲' },
+    { value: '95%', label: 'Satisfaction', icon: '⭐' },
+  ]
 
   return (
-    <div style={{ backgroundColor: colors.white, fontFamily: "'Georgia', serif" }}>
-
-      {/* navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: colors.white, borderBottom: `2px solid ${colors.dark}`, padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-        <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: 3, color: colors.dark, textTransform: 'uppercase' }}>Alethea</span>
-
-        <div className="hidden md:flex" style={{ gap: 40 }}>
-          {['Features', 'How it Works', 'Testimonials'].map((item, i) => (
-            <a key={i} href={`#${item.toLowerCase().replace(/ /g, '-')}`}
-              style={{ color: colors.taupe, textDecoration: 'none', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>
-              {item}
-            </a>
-          ))}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50">
+      {/* Navbar */}
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-xl">A</span>
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">Alethea</span>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-8">
+            {['Features', 'How It Works', 'Testimonials'].map(item => (
+              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} className="text-gray-600 hover:text-indigo-600 transition-colors">
+                {item}
+              </a>
+            ))}
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {/* Sign In button - goes to Login page */}
+            <Link to="/login" className="text-gray-600 hover:text-indigo-600 transition-colors">
+              Sign In
+            </Link>
+            {/* Get Started button - goes to Signup page */}
+            <Link to="/signup" className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white px-6 py-2 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+              Get Started
+            </Link>
+          </div>
         </div>
-
-        <div className="hidden md:flex" style={{ gap: 12, alignItems: 'center' }}>
-          <Link to="/login" style={{ color: colors.taupe, textDecoration: 'none', fontSize: 13, letterSpacing: 1, fontFamily: 'sans-serif' }}>Login</Link>
-          <Link to="/signup" style={{ backgroundColor: colors.dark, color: colors.white, padding: '10px 28px', textDecoration: 'none', fontSize: 13, letterSpacing: 1, fontFamily: 'sans-serif', textTransform: 'uppercase' }}>
-            Get Started →
-          </Link>
-        </div>
-
-        <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}
-          style={{ background: 'none', border: 'none', fontSize: 24, color: colors.dark, cursor: 'pointer' }}>
-          {menuOpen ? '✕' : '☰'}
-        </button>
       </nav>
 
-      {menuOpen && (
-        <div style={{ backgroundColor: colors.white, borderBottom: `1px solid ${colors.peach}`, padding: '24px 48px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {['Features', 'How it Works', 'Testimonials'].map((item, i) => (
-            <a key={i} href={`#${item.toLowerCase().replace(/ /g, '-')}`}
-              onClick={() => setMenuOpen(false)}
-              style={{ color: colors.taupe, textDecoration: 'none', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase' }}>{item}</a>
-          ))}
-          <Link to="/login" onClick={() => setMenuOpen(false)} style={{ color: colors.taupe, textDecoration: 'none', fontSize: 13 }}>Login</Link>
-          <Link to="/signup" onClick={() => setMenuOpen(false)}
-            style={{ backgroundColor: colors.dark, color: colors.white, padding: '10px 20px', textDecoration: 'none', textAlign: 'center', fontSize: 13, textTransform: 'uppercase' }}>
-            Get Started →
-          </Link>
-        </div>
-      )}
-
-      {/* hero */}
-      <section style={{ backgroundColor: colors.dark, minHeight: '95vh', display: 'flex', alignItems: 'center', padding: '0 48px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', width: '100%', paddingTop: 60, paddingBottom: 60 }}>
-          <p style={{ color: colors.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 28 }}>
-            — AI Powered Nutrition & Health Platform
-          </p>
-          <h1 style={{ color: colors.white, fontSize: 'clamp(3rem, 8vw, 7rem)', fontWeight: 900, lineHeight: 1, marginBottom: 32, letterSpacing: -2 }}>
-            EAT SMART.<br />
-            <span style={{ color: colors.peach }}>LIVE WELL.</span><br />
-            FEEL GREAT.
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center px-4 py-2 bg-indigo-100 rounded-full mb-8">
+            <span className="text-indigo-600 text-sm font-semibold">✨ AI-Powered Health Coach</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+            Your Personal{' '}
+            <span className="bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
+              Nutrition
+            </span>
+            <br />& Health Companion
           </h1>
-          <p style={{ color: colors.taupe, fontSize: 16, maxWidth: 480, lineHeight: 1.9, fontFamily: 'sans-serif', marginBottom: 48 }}>
-            Alethea is your intelligent health companion. Track meals, get AI-powered diet plans, monitor your vitals, and predict future health trends — beautifully simple.
+          
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-10">
+            Track meals, get AI-powered diet plans, monitor health metrics, and predict future trends — all in one beautiful platform.
           </p>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <Link to="/signup" style={{ backgroundColor: colors.peach, color: colors.dark, padding: '16px 40px', textDecoration: 'none', fontWeight: 700, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>
-              Start Free Today
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {/* Start Your Journey button - goes to Signup page */}
+            <Link to="/signup" className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+              Start Your Journey Free →
             </Link>
-            <a href="#features" style={{ border: `1px solid ${colors.taupe}`, color: colors.taupe, padding: '16px 40px', textDecoration: 'none', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>
-              Explore Features
+            <a href="#features" className="bg-white text-indigo-600 border-2 border-indigo-600 hover:bg-indigo-50 px-8 py-3 rounded-xl font-semibold transition-all">
+              Learn More
             </a>
           </div>
 
-          {/* stats */}
-          <div style={{ display: 'flex', gap: 64, marginTop: 96, flexWrap: 'wrap', borderTop: `1px solid ${colors.taupe}`, paddingTop: 40 }}>
-            {[['10K+', 'Active Users'], ['500K+', 'Meals Tracked'], ['95%', 'Satisfaction Rate']].map(([val, label], i) => (
-              <div key={i}>
-                <p style={{ color: colors.peach, fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{val}</p>
-                <p style={{ color: colors.taupe, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', marginTop: 6, fontFamily: 'sans-serif' }}>{label}</p>
+          {/* Stats */}
+          <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+            {stats.map((stat, i) => (
+              <div key={i} className="text-center animate-float" style={{ animationDelay: `${i * 0.2}s` }}>
+                <div className="text-4xl mb-2">{stat.icon}</div>
+                <div className="text-3xl font-bold text-indigo-600">{stat.value}</div>
+                <div className="text-gray-500">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* features */}
-      <section id="features" style={{ backgroundColor: colors.white, padding: '100px 48px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, flexWrap: 'wrap', gap: 20 }}>
-            <div>
-              <p style={{ color: colors.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 12 }}>What We Offer</p>
-              <h2 style={{ color: colors.dark, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1, letterSpacing: -1 }}>
-                BUILT FOR<br />YOUR HEALTH.
-              </h2>
-            </div>
-            <p style={{ color: colors.taupe, fontSize: 15, maxWidth: 320, lineHeight: 1.8, fontFamily: 'sans-serif' }}>
-              Every feature is designed with one goal — to make your health journey smarter and easier.
-            </p>
+      {/* Features Section */}
+      <section id="features" className="py-20 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Everything You Need</h2>
+            <p className="text-gray-600 text-lg">Powerful features to transform your health journey</p>
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2 }}>
-            {[
-              { icon: '🥗', title: 'Meal Tracking', desc: 'Log your daily meals and get instant nutritional breakdowns with ease.' },
-              { icon: '🤖', title: 'AI Diet Plans', desc: 'Smart personalized diet recommendations powered by machine learning.' },
-              { icon: '📊', title: 'Health Analytics', desc: 'Beautiful charts to monitor your progress and spot trends.' },
-              { icon: '🔮', title: 'Health Prediction', desc: 'Predict your future health using your own data and patterns.' },
-              { icon: '🎯', title: 'Goal Tracking', desc: 'Define your goals and stay on track with daily progress updates.' },
-              { icon: '📱', title: 'Simple Interface', desc: 'Designed for everyone — clean, fast, and intuitive to use.' },
-            ].map((f, i) => (
-              <div key={i} style={{ padding: 36, border: `1px solid ${colors.peach}`, backgroundColor: i % 2 === 0 ? colors.white : colors.dark }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.peach}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = i % 2 === 0 ? colors.white : colors.dark}>
-                <p style={{ fontSize: 32, marginBottom: 16 }}>{f.icon}</p>
-                <h3 style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.5, marginBottom: 10, color: i % 2 === 0 ? colors.dark : colors.white }}>{f.title}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.8, fontFamily: 'sans-serif', color: i % 2 === 0 ? colors.taupe : colors.taupe }}>{f.desc}</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, i) => (
+              <div key={i} className="group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 border border-gray-100">
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-500">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* how it works */}
-      <section id="how-it-works" style={{ backgroundColor: colors.peach, padding: '100px 48px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ color: colors.dark, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 12, opacity: 0.6 }}>Simple Process</p>
-          <h2 style={{ color: colors.dark, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1, letterSpacing: -1, marginBottom: 64 }}>
-            THREE STEPS.<br />THAT'S IT.
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 32 }}>
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 px-6 bg-gradient-to-r from-indigo-50 to-pink-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Simple 3-Step Process</h2>
+            <p className="text-gray-600 text-lg">Get started in minutes</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Create Account', desc: 'Sign up and fill in your personal health profile and set your goals.' },
-              { step: '02', title: 'Log Your Meals', desc: 'Track everything you eat daily and let our AI analyze your nutrition.' },
-              { step: '03', title: 'Get Insights', desc: 'Receive smart recommendations and future health predictions.' },
+              { step: '01', title: 'Create Account', desc: 'Sign up and set your health goals', icon: '📝' },
+              { step: '02', title: 'Track Meals', desc: 'Log what you eat with AI assistance', icon: '🍽️' },
+              { step: '03', title: 'Get Insights', desc: 'Receive personalized recommendations', icon: '📈' },
             ].map((item, i) => (
-              <div key={i} style={{ borderTop: `3px solid ${colors.dark}`, paddingTop: 28 }}>
-                <p style={{ fontSize: 56, fontWeight: 900, color: colors.dark, opacity: 0.15, lineHeight: 1, marginBottom: 12 }}>{item.step}</p>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: colors.dark, marginBottom: 12, letterSpacing: -0.5 }}>{item.title}</h3>
-                <p style={{ fontSize: 14, color: colors.dark, lineHeight: 1.8, fontFamily: 'sans-serif', opacity: 0.7 }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* testimonials */}
-      <section id="testimonials" style={{ backgroundColor: colors.dark, padding: '100px 48px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ color: colors.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 12 }}>User Reviews</p>
-          <h2 style={{ color: colors.white, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1, letterSpacing: -1, marginBottom: 64 }}>
-            REAL PEOPLE.<br />REAL RESULTS.
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-            {[
-              { name: 'Sarah K.', role: 'Fitness Enthusiast', text: 'Alethea completely changed how I think about food. The AI recommendations are always spot on.' },
-              { name: 'Raj M.', role: 'Software Engineer', text: 'Lost 8kg in 3 months just following the meal plans. Simple, effective, and beautiful.' },
-              { name: 'Priya T.', role: 'Nutritionist', text: 'I recommend Alethea to all my clients. The health predictions are genuinely impressive.' },
-            ].map((t, i) => (
-              <div key={i} style={{ border: `1px solid ${colors.taupe}`, padding: 36 }}>
-                <p style={{ color: colors.taupe, fontSize: 32, marginBottom: 16, lineHeight: 1 }}>"</p>
-                <p style={{ color: colors.white, fontSize: 15, lineHeight: 1.9, fontStyle: 'italic', marginBottom: 28, fontFamily: 'sans-serif' }}>{t.text}</p>
-                <div style={{ borderTop: `1px solid ${colors.taupe}`, paddingTop: 20 }}>
-                  <p style={{ color: colors.peach, fontWeight: 800, fontSize: 14 }}>{t.name}</p>
-                  <p style={{ color: colors.taupe, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif', marginTop: 4 }}>{t.role}</p>
+              <div key={i} className="text-center">
+                <div className="w-20 h-20 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <span className="text-3xl">{item.icon}</span>
                 </div>
+                <div className="text-5xl font-bold text-indigo-200 mb-2">{item.step}</div>
+                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                <p className="text-gray-500">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* cta */}
-      <section style={{ backgroundColor: colors.white, padding: '100px 48px', borderTop: `2px solid ${colors.dark}` }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 40 }}>
-          <h2 style={{ color: colors.dark, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1, letterSpacing: -1 }}>
-            READY TO<br />START YOUR<br />JOURNEY?
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <p style={{ color: colors.taupe, fontSize: 15, maxWidth: 320, lineHeight: 1.8, fontFamily: 'sans-serif' }}>
-              Join thousands of users already transforming their health with Alethea. It is completely free to start.
-            </p>
-            <Link to="/signup" style={{ backgroundColor: colors.dark, color: colors.white, padding: '16px 40px', textDecoration: 'none', fontWeight: 700, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif', display: 'inline-block' }}>
-              Create Free Account →
-            </Link>
+      {/* Testimonials */}
+      <section id="testimonials" className="py-20 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">What Our Users Say</h2>
+            <p className="text-gray-600 text-lg">Real people, real results</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { name: 'Sarah Johnson', role: 'Fitness Enthusiast', text: 'Alethea has completely transformed my relationship with food. The AI recommendations are spot on!' },
+              { name: 'Michael Chen', role: 'Software Engineer', text: 'Lost 15kg in 3 months. The meal tracking is so easy and the diet plans are very practical.' },
+              { name: 'Dr. Emily Rodriguez', role: 'Nutritionist', text: 'I recommend Alethea to all my patients. The health predictions are surprisingly accurate.' },
+            ].map((testimonial, i) => (
+              <div key={i} className="p-6 bg-gray-50 rounded-2xl">
+                <div className="text-yellow-400 text-xl mb-4">★★★★★</div>
+                <p className="text-gray-600 mb-4">"{testimonial.text}"</p>
+                <div className="font-semibold text-gray-800">{testimonial.name}</div>
+                <div className="text-sm text-gray-500">{testimonial.role}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* footer with Open Food Facts attribution */}
-      <footer style={{ backgroundColor: colors.dark, padding: '32px 48px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ backgroundColor: colors.peach, width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: colors.dark, fontWeight: 'bold', fontSize: 14 }}>A</span>
-          </div>
-          <span style={{ color: colors.white, fontWeight: 700, letterSpacing: 1 }}>ALETHEA</span>
+      {/* CTA Section */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center bg-gradient-to-r from-indigo-600 to-pink-600 rounded-3xl p-12 shadow-2xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Ready to Transform Your Health?
+          </h2>
+          <p className="text-indigo-100 text-lg mb-8">
+            Join thousands of users already improving their lives with Alethea
+          </p>
+          {/* Start Free Trial button - goes to Signup page */}
+          <Link to="/signup" className="bg-white text-indigo-600 px-8 py-3 rounded-xl font-semibold hover:shadow-xl transition-all inline-block">
+            Start Free Trial →
+          </Link>
         </div>
-        <p style={{ color: colors.taupe, fontSize: 13 }}>© 2024 Alethea Health Coach — Final Year Project</p>
-        <p style={{ color: colors.taupe, fontSize: 11, textAlign: 'center' }}>
-          Food data provided by{' '}
-          <a 
-            href="https://openfoodfacts.org/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ color: colors.peach, textDecoration: 'none' }}
-          >
-            Open Food Facts
-          </a>
-        </p>
-      </footer>
+      </section>
 
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">A</span>
+            </div>
+            <span className="text-xl font-bold">Alethea Health Coach</span>
+          </div>
+          <p className="text-gray-400">© 2024 Alethea — Final Year Project</p>
+        </div>
+      </footer>
     </div>
   )
 }

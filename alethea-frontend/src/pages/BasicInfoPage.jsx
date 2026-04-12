@@ -1,19 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import API from '../services/authService'
-
-const colors = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import { updateProfile } from '../services/authService'
+import toast from 'react-hot-toast'
 
 const BasicInfoPage = () => {
   const navigate = useNavigate()
   const { user, login } = useAuth()
-  
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     age: user?.age || '',
@@ -21,190 +15,107 @@ const BasicInfoPage = () => {
     height: user?.height || '',
     weight: user?.weight || '',
   })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  // If user already has profile info, show skip option
-  const hasExistingData = user?.full_name && user?.age && user?.height && user?.weight
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
-    
     try {
-      // Save basic info to backend
-      const response = await API.put('/users/me', formData)
-      console.log('Profile updated:', response.data)
-      
-      // Refresh user profile in context
-      const updatedProfile = await API.get('/users/me')
-      login(localStorage.getItem('token'), updatedProfile.data)
-      
-      // Navigate to next page
+      const updatedUser = await updateProfile(formData)
+      login(localStorage.getItem('token'), { ...user, ...updatedUser })
+      toast.success('Basic info saved!')
+      // Redirect to goals page
       navigate('/goals-health')
-    } catch (err) {
-      console.error('Error saving profile:', err)
-      setError(err.response?.data?.detail || 'Failed to save information')
+    } catch (error) {
+      toast.error('Failed to save')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleSkip = () => {
+    // Skip to dashboard
+    navigate('/dashboard')
+  }
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.white }}>
-      
-      {/* Progress Bar */}
-      <div style={{ backgroundColor: colors.dark, padding: '20px 24px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h1 style={{ color: colors.white, fontSize: 24, fontWeight: 700 }}>Complete Your Profile</h1>
-            <span style={{ color: colors.peach, fontSize: 14 }}>Step 1 of 3</span>
-          </div>
-          <div style={{ backgroundColor: colors.taupe, borderRadius: 10, height: 8, overflow: 'hidden' }}>
-            <div style={{ width: '33%', backgroundColor: colors.peach, height: '100%', borderRadius: 10 }} />
-          </div>
-          <p style={{ color: colors.taupe, fontSize: 13, marginTop: 12 }}>Let's get to know you better</p>
-        </div>
-      </div>
-      
-      {/* Form Content */}
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px' }}>
-        
-        <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 32 }}>
-          
-          <h2 style={{ color: colors.dark, fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Basic Information</h2>
-          <p style={{ color: colors.taupe, fontSize: 14, marginBottom: 32 }}>Tell us about yourself to personalize your health journey</p>
-          
-          {error && (
-            <div style={{ backgroundColor: '#fde8e8', border: '1px solid #f5c6c6', color: '#b91c1c', padding: '12px 16px', borderRadius: 8, marginBottom: 24, fontSize: 14 }}>
-              {error}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12 px-6">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-white text-2xl">📝</span>
             </div>
-          )}
-          
-          <form onSubmit={handleSubmit}>
-            {/* Full Name */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', color: colors.dark, fontWeight: 500, marginBottom: 8, fontSize: 14 }}>
-                Full Name *
-              </label>
+            <h1 className="text-3xl font-bold text-gray-800">Basic Information</h1>
+            <p className="text-gray-500 mt-2">Let's get to know you better</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
               <input
                 type="text"
-                name="full_name"
                 value={formData.full_name}
-                onChange={handleChange}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 required
-                placeholder="Enter your full name"
-                style={{ width: '100%', padding: '12px 16px', border: `1.5px solid ${colors.peach}`, borderRadius: 8, fontSize: 14, outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = colors.dark}
-                onBlur={e => e.target.style.borderColor = colors.peach}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                placeholder="John Doe"
               />
             </div>
-            
-            {/* Age */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', color: colors.dark, fontWeight: 500, marginBottom: 8, fontSize: 14 }}>
-                Age *
-              </label>
-              <input
-                type="number"
-                name="age"
-                value={formData.age}
-                onChange={handleChange}
-                required
-                min="1"
-                max="120"
-                placeholder="Enter your age"
-                style={{ width: '100%', padding: '12px 16px', border: `1.5px solid ${colors.peach}`, borderRadius: 8, fontSize: 14, outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = colors.dark}
-                onBlur={e => e.target.style.borderColor = colors.peach}
-              />
-            </div>
-            
-            {/* Gender */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', color: colors.dark, fontWeight: 500, marginBottom: 8, fontSize: 14 }}>
-                Gender *
-              </label>
-              <div style={{ display: 'flex', gap: 16 }}>
-                {['Male', 'Female', 'Other'].map(option => (
-                  <label key={option} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="gender"
-                      value={option.toLowerCase()}
-                      checked={formData.gender === option.toLowerCase()}
-                      onChange={handleChange}
-                      style={{ accentColor: colors.peach }}
-                    />
-                    <span style={{ color: colors.taupe, fontSize: 14 }}>{option}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            
-            {/* Height & Weight Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label style={{ display: 'block', color: colors.dark, fontWeight: 500, marginBottom: 8, fontSize: 14 }}>
-                  Height (cm) *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
                 <input
                   type="number"
-                  name="height"
-                  value={formData.height}
-                  onChange={handleChange}
-                  required
-                  step="0.1"
-                  placeholder="e.g., 170"
-                  style={{ width: '100%', padding: '12px 16px', border: `1.5px solid ${colors.peach}`, borderRadius: 8, fontSize: 14, outline: 'none' }}
-                  onFocus={e => e.target.style.borderColor = colors.dark}
-                  onBlur={e => e.target.style.borderColor = colors.peach}
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                  placeholder="25"
                 />
               </div>
-              
               <div>
-                <label style={{ display: 'block', color: colors.dark, fontWeight: 500, marginBottom: 8, fontSize: 14 }}>
-                  Weight (kg) *
-                </label>
-                <input
-                  type="number"
-                  name="weight"
-                  value={formData.weight}
-                  onChange={handleChange}
-                  required
-                  step="0.1"
-                  placeholder="e.g., 65"
-                  style={{ width: '100%', padding: '12px 16px', border: `1.5px solid ${colors.peach}`, borderRadius: 8, fontSize: 14, outline: 'none' }}
-                  onFocus={e => e.target.style.borderColor = colors.dark}
-                  onBlur={e => e.target.style.borderColor = colors.peach}
-                />
-              </div>
-            </div>
-            
-            {/* Navigation Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
-              {hasExistingData && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard')}
-                  style={{ backgroundColor: 'transparent', border: `1.5px solid ${colors.peach}`, color: colors.taupe, padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
                 >
-                  Skip to Dashboard
-                </button>
-              )}
-              
-              {!hasExistingData && <div />}
-              
-              <button
-                type="submit"
-                disabled={loading}
-                style={{ backgroundColor: colors.dark, color: colors.white, border: 'none', padding: '12px 32px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
-              >
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
+                <input
+                  type="number"
+                  value={formData.height}
+                  onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                  placeholder="170"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                <input
+                  type="number"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                  placeholder="70"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button type="button" onClick={handleSkip} className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">
+                Skip
+              </button>
+              <button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50">
                 {loading ? 'Saving...' : 'Continue →'}
               </button>
             </div>

@@ -3,12 +3,24 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
 from app.api.deps import get_current_user
-from app.schemas.user import UserUpdate
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
+    goal: Optional[str] = None
+    activity_level: Optional[str] = None
+    diet_type: Optional[str] = None
+    allergies: Optional[str] = None
+
 @router.get("/me")
-def get_me(current_user: User = Depends(get_current_user)):
+def get_current_user_info(current_user: User = Depends(get_current_user)):
     return {
         "id": str(current_user.id),
         "full_name": current_user.full_name,
@@ -25,14 +37,15 @@ def get_me(current_user: User = Depends(get_current_user)):
     }
 
 @router.put("/me")
-def update_me(data: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    for field, value in data.dict(exclude_unset=True).items():
-        setattr(current_user, field, value)
+def update_current_user(
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    for key, value in user_data.dict(exclude_unset=True).items():
+        setattr(current_user, key, value)
+    
     db.commit()
-    return {"message": "Profile updated"}
-
-@router.delete("/me")
-def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    db.delete(current_user)
-    db.commit()
-    return {"message": "Account deleted"}
+    db.refresh(current_user)
+    
+    return {"message": "Profile updated successfully"}

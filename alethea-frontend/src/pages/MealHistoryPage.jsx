@@ -1,268 +1,118 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import API from '../services/authService'
-
-const colors = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useMeals } from '../context/MealContext'
+import api from '../services/api'
+import toast from 'react-hot-toast'
 
 const MealHistoryPage = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  
-  const [meals, setMeals] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { meals, fetchMeals, removeMeal } = useMeals()
   const [filter, setFilter] = useState('all')
-  const [selectedMeal, setSelectedMeal] = useState(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   useEffect(() => {
     fetchMeals()
   }, [])
 
-  const fetchMeals = async () => {
-    try {
-      const response = await API.get('/meals')
-      setMeals(response.data)
-      console.log('Meals loaded:', response.data)
-    } catch (error) {
-      console.error('Error fetching meals:', error)
-    } finally {
-      setLoading(false)
+  const handleDelete = async (id) => {
+    if (confirm('Delete this meal?')) {
+      try {
+        await api.delete(`/meals/${id}`)
+        removeMeal(id)
+        toast.success('Meal deleted')
+      } catch (error) {
+        toast.error('Delete failed')
+      }
     }
   }
 
-  const handleDelete = async () => {
-    if (!selectedMeal) return
-    
-    try {
-      await API.delete(`/meals/${selectedMeal.id}`)
-      setMeals(meals.filter(m => m.id !== selectedMeal.id))
-      setShowDeleteModal(false)
-      setSelectedMeal(null)
-    } catch (error) {
-      console.error('Error deleting meal:', error)
-    }
-  }
+  const filteredMeals = meals.filter(meal => {
+    if (filter !== 'all' && meal.meal_type !== filter) return false
+    return true
+  })
 
-  const getMealTypeIcon = (type) => {
-    const icons = {
-      breakfast: '🌅',
-      lunch: '☀️',
-      dinner: '🌙',
-      snack: '🍎'
-    }
-    return icons[type] || '🍽️'
-  }
-
-  const filteredMeals = filter === 'all' 
-    ? meals 
-    : meals.filter(meal => meal.meal_type === filter)
-
-  const totalCalories = filteredMeals.reduce((sum, meal) => sum + (meal.calories || 0), 0)
-  const totalProtein = filteredMeals.reduce((sum, meal) => sum + (meal.protein || 0), 0)
-  const totalCarbs = filteredMeals.reduce((sum, meal) => sum + (meal.carbs || 0), 0)
-  const totalFat = filteredMeals.reduce((sum, meal) => sum + (meal.fat || 0), 0)
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: colors.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 50, height: 50, border: `3px solid ${colors.peach}`, borderTopColor: colors.dark, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
-          <p style={{ color: colors.taupe }}>Loading your meals...</p>
-        </div>
-      </div>
-    )
-  }
+  const totalNutrition = filteredMeals.reduce((acc, meal) => ({
+    calories: acc.calories + (meal.calories || 0),
+    protein: acc.protein + (meal.protein || 0),
+    carbs: acc.carbs + (meal.carbs || 0),
+    fat: acc.fat + (meal.fat || 0),
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.white }}>
-      
-      {/* Header */}
-      <div style={{ backgroundColor: colors.dark, padding: '20px 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <button
-            onClick={() => navigate('/dashboard')}
-            style={{ backgroundColor: 'transparent', border: 'none', color: colors.peach, cursor: 'pointer', marginBottom: 16, fontSize: 14 }}
-          >
-            ← Back to Dashboard
-          </button>
-          <h1 style={{ color: colors.white, fontSize: 28, fontWeight: 700 }}>Meal History</h1>
-          <p style={{ color: colors.taupe, marginTop: 8 }}>Track your eating habits over time</p>
-        </div>
-      </div>
-      
-      {/* Content */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        
-        {/* Summary Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-          <div style={{ backgroundColor: `${colors.peach}10`, border: `1px solid ${colors.peach}`, borderRadius: 12, padding: 20, textAlign: 'center' }}>
-            <p style={{ color: colors.taupe, fontSize: 12 }}>Total Meals</p>
-            <p style={{ color: colors.dark, fontSize: 32, fontWeight: 700 }}>{filteredMeals.length}</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <button onClick={() => navigate('/dashboard')} className="text-white hover:text-gray-200">← Back</button>
+              <div className="flex-1 text-center">
+                <h1 className="text-2xl font-bold">Meal History</h1>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div><div className="text-2xl font-bold">{Math.round(totalNutrition.calories)}</div><div className="text-sm opacity-90">Calories</div></div>
+              <div><div className="text-2xl font-bold">{Math.round(totalNutrition.protein)}g</div><div className="text-sm opacity-90">Protein</div></div>
+              <div><div className="text-2xl font-bold">{Math.round(totalNutrition.carbs)}g</div><div className="text-sm opacity-90">Carbs</div></div>
+              <div><div className="text-2xl font-bold">{Math.round(totalNutrition.fat)}g</div><div className="text-sm opacity-90">Fat</div></div>
+            </div>
           </div>
-          <div style={{ backgroundColor: `${colors.peach}10`, border: `1px solid ${colors.peach}`, borderRadius: 12, padding: 20, textAlign: 'center' }}>
-            <p style={{ color: colors.taupe, fontSize: 12 }}>Total Calories</p>
-            <p style={{ color: colors.dark, fontSize: 32, fontWeight: 700 }}>{totalCalories}</p>
-            <p style={{ color: colors.taupe, fontSize: 11 }}>kcal</p>
+
+          {/* Filters */}
+          <div className="p-4 border-b flex flex-wrap gap-2">
+            {['all', 'breakfast', 'lunch', 'dinner', 'snack'].map(type => (
+              <button
+                key={type}
+                onClick={() => setFilter(type)}
+                className={`px-4 py-2 rounded-lg capitalize ${filter === type ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                {type === 'all' ? 'All' : type}
+              </button>
+            ))}
           </div>
-          <div style={{ backgroundColor: `${colors.peach}10`, border: `1px solid ${colors.peach}`, borderRadius: 12, padding: 20, textAlign: 'center' }}>
-            <p style={{ color: colors.taupe, fontSize: 12 }}>Protein</p>
-            <p style={{ color: colors.dark, fontSize: 32, fontWeight: 700 }}>{totalProtein}</p>
-            <p style={{ color: colors.taupe, fontSize: 11 }}>grams</p>
-          </div>
-          <div style={{ backgroundColor: `${colors.peach}10`, border: `1px solid ${colors.peach}`, borderRadius: 12, padding: 20, textAlign: 'center' }}>
-            <p style={{ color: colors.taupe, fontSize: 12 }}>Carbs / Fat</p>
-            <p style={{ color: colors.dark, fontSize: 20, fontWeight: 700 }}>{totalCarbs}g / {totalFat}g</p>
-          </div>
-        </div>
-        
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 32, flexWrap: 'wrap' }}>
-          {[
-            { value: 'all', label: 'All Meals' },
-            { value: 'breakfast', label: '🌅 Breakfast' },
-            { value: 'lunch', label: '☀️ Lunch' },
-            { value: 'dinner', label: '🌙 Dinner' },
-            { value: 'snack', label: '🍎 Snack' },
-          ].map(f => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              style={{
-                padding: '8px 20px',
-                backgroundColor: filter === f.value ? colors.peach : 'transparent',
-                border: `1.5px solid ${colors.peach}`,
-                borderRadius: 20,
-                cursor: 'pointer',
-                color: filter === f.value ? colors.dark : colors.taupe,
-                fontWeight: filter === f.value ? 600 : 400,
-                fontSize: 13
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-        
-        {/* Add Meal Button */}
-        <Link to="/log-meal" style={{ textDecoration: 'none' }}>
-          <div style={{ backgroundColor: colors.dark, borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'center', cursor: 'pointer' }}>
-            <span style={{ color: colors.white, fontSize: 14, fontWeight: 500 }}>+ Log a New Meal</span>
-          </div>
-        </Link>
-        
-        {/* Meals List */}
-        {filteredMeals.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: `${colors.peach}05`, borderRadius: 16 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🍽️</div>
-            <p style={{ color: colors.taupe, fontSize: 16 }}>No meals logged yet</p>
-            <Link to="/log-meal" style={{ color: colors.peach, textDecoration: 'none', marginTop: 12, display: 'inline-block' }}>
-              Log your first meal →
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {filteredMeals.map(meal => (
-              <div key={meal.id} style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 12, padding: 20, transition: 'box-shadow 0.2s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                      <span style={{ fontSize: 28 }}>{getMealTypeIcon(meal.meal_type)}</span>
-                      <div>
-                        <h3 style={{ color: colors.dark, fontSize: 18, fontWeight: 600, margin: 0 }}>{meal.food_name}</h3>
-                        <p style={{ color: colors.taupe, fontSize: 12, marginTop: 4 }}>
-                          {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}
-                          {meal.quantity && ` • ${meal.quantity} ${meal.unit}`}
-                        </p>
+
+          {/* Meal List */}
+          <div className="divide-y">
+            {filteredMeals.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-2">🍽️</div>
+                <p>No meals logged yet</p>
+                <button onClick={() => navigate('/log-meal')} className="mt-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-2 rounded-xl">
+                  Log Your First Meal
+                </button>
+              </div>
+            ) : (
+              filteredMeals.map((meal) => (
+                <div key={meal.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium text-indigo-600 capitalize">{meal.meal_type}</span>
+                        <span className="text-xs text-gray-400">{new Date(meal.created_at).toLocaleString()}</span>
+                      </div>
+                      <h3 className="font-semibold text-gray-800">{meal.food_name}</h3>
+                      <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                        <span>🔥 {Math.round(meal.calories || 0)} kcal</span>
+                        <span>💪 {meal.protein || 0}g P</span>
+                        <span>🌾 {meal.carbs || 0}g C</span>
+                        <span>🥑 {meal.fat || 0}g F</span>
                       </div>
                     </div>
-                    
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 12 }}>
-                      {meal.calories && (
-                        <div>
-                          <p style={{ color: colors.taupe, fontSize: 11 }}>Calories</p>
-                          <p style={{ color: colors.dark, fontWeight: 600 }}>{meal.calories} kcal</p>
-                        </div>
-                      )}
-                      {meal.protein && (
-                        <div>
-                          <p style={{ color: colors.taupe, fontSize: 11 }}>Protein</p>
-                          <p style={{ color: colors.dark, fontWeight: 600 }}>{meal.protein}g</p>
-                        </div>
-                      )}
-                      {meal.carbs && (
-                        <div>
-                          <p style={{ color: colors.taupe, fontSize: 11 }}>Carbs</p>
-                          <p style={{ color: colors.dark, fontWeight: 600 }}>{meal.carbs}g</p>
-                        </div>
-                      )}
-                      {meal.fat && (
-                        <div>
-                          <p style={{ color: colors.taupe, fontSize: 11 }}>Fat</p>
-                          <p style={{ color: colors.dark, fontWeight: 600 }}>{meal.fat}g</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ color: colors.taupe, fontSize: 12 }}>
-                      {meal.logged_at ? new Date(meal.logged_at).toLocaleDateString() : 'Today'}
-                    </p>
-                    <button
-                      onClick={() => {
-                        setSelectedMeal(meal)
-                        setShowDeleteModal(true)
-                      }}
-                      style={{ backgroundColor: 'transparent', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 20, marginTop: 8 }}
-                    >
+                    <button onClick={() => handleDelete(meal.id)} className="text-red-500 hover:text-red-700 p-2">
                       🗑️
                     </button>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        )}
-      </div>
-      
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: colors.white, borderRadius: 16, padding: 32, maxWidth: 400, width: '90%' }}>
-            <h3 style={{ color: colors.dark, marginBottom: 16 }}>Delete Meal?</h3>
-            <p style={{ color: colors.taupe, marginBottom: 24 }}>
-              Are you sure you want to delete "{selectedMeal?.food_name}"? This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                style={{ flex: 1, padding: '12px', backgroundColor: 'transparent', border: `1.5px solid ${colors.peach}`, borderRadius: 8, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                style={{ flex: 1, padding: '12px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}
-              >
-                Delete
-              </button>
-            </div>
+
+          <div className="p-4 border-t">
+            <button onClick={() => navigate('/log-meal')} className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 rounded-xl">
+              + Log Another Meal
+            </button>
           </div>
         </div>
-      )}
-      
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      </div>
     </div>
   )
 }

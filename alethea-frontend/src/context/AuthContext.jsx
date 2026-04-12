@@ -1,48 +1,45 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { getMyProfile } from '../services/authService'
+import { useNavigate } from 'react-router-dom'
 
 const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        const token = localStorage.getItem('token')
-        console.log('Token on load:', token) // Debug
-        
-        if (token) {
-            getMyProfile()
-                .then((data) => {
-                    console.log('Profile loaded:', data) // Debug
-                    setUser(data)
-                })
-                .catch((error) => {
-                    console.error('Profile error:', error)
-                    localStorage.removeItem('token')
-                })
-                .finally(() => setLoading(false))
-        } else {
-            setLoading(false)
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = localStorage.getItem('token')
+      if (token) {
+        try {
+          const userData = await getMyProfile()
+          setUser(userData)
+        } catch (error) {
+          localStorage.removeItem('token')
         }
-    }, [])
-
-    const login = (token, userData) => {
-        console.log('Login called with token:', token) // Debug
-        localStorage.setItem('token', token)
-        setUser(userData)
+      }
+      setLoading(false)
     }
+    loadUser()
+  }, [])
 
-    const logout = () => {
-        localStorage.removeItem('token')
-        setUser(null)
-    }
+  const login = (token, userData) => {
+    localStorage.setItem('token', token)
+    setUser(userData)
+  }
 
-    return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
-            {children}
-        </AuthContext.Provider>
-    )
+  const logout = () => {
+    localStorage.removeItem('token')
+    setUser(null)
+    // Redirect handled in component
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export const useAuth = () => useContext(AuthContext)

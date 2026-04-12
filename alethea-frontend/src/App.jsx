@@ -1,18 +1,20 @@
+import { BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import { MealProvider } from './context/MealContext'
-import { ThemeProvider } from './context/ThemeContext'
 import AppRoutes from './routes/AppRoutes'
 
-const App = () => {
-    return (
-        <ThemeProvider>
-            <AuthProvider>
-                <MealProvider>
-                    <AppRoutes />
-                </MealProvider>
-            </AuthProvider>
-        </ThemeProvider>
-    )
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <MealProvider>
+          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+          <AppRoutes />
+        </MealProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  )
 }
 
 export default App

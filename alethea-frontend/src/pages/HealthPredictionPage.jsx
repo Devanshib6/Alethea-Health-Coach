@@ -1,277 +1,125 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import API from '../services/authService'
-
-const c = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import api from '../services/api'
+import toast from 'react-hot-toast'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const HealthPredictionPage = () => {
   const navigate = useNavigate()
   const [prediction, setPrediction] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const [records, setRecords] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-
-  const [formData, setFormData] = useState({
-    weight: '',
-    blood_pressure: '',
-    sugar_level: '',
-    cholesterol: '',
-    notes: ''
-  })
+  const [formData, setFormData] = useState({ weight: '', blood_pressure: '', sugar_level: '', cholesterol: '' })
 
   useEffect(() => {
-    fetchPrediction()
+    fetchData()
   }, [])
 
-  const fetchPrediction = async () => {
+  const fetchData = async () => {
     try {
-      const response = await API.get('/health/predict')
-      if (response.data.prediction) {
-        setPrediction(response.data.prediction)
-      }
-    } catch (err) {
-      console.error('Error fetching prediction:', err)
-    } finally {
-      setLoading(false)
+      const [recordsRes, predictRes] = await Promise.all([
+        api.get('/health/records'),
+        api.get('/health/predict')
+      ])
+      setRecords(recordsRes.data)
+      if (predictRes.data.prediction) setPrediction(predictRes.data.prediction)
+    } catch (error) {
+      console.error('Failed to fetch health data:', error)
     }
-  }
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSubmitting(true)
-    setError('')
     try {
-      await API.post('/health/record', {
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        blood_pressure: formData.blood_pressure || null,
-        sugar_level: formData.sugar_level ? parseFloat(formData.sugar_level) : null,
-        cholesterol: formData.cholesterol ? parseFloat(formData.cholesterol) : null,
-        notes: formData.notes || null
-      })
-      setSuccess('Health record added successfully!')
+      await api.post('/health/record', formData)
+      toast.success('Health record added!')
       setShowForm(false)
-      setFormData({ weight: '', blood_pressure: '', sugar_level: '', cholesterol: '', notes: '' })
-      setTimeout(() => {
-        fetchPrediction()
-        setSuccess('')
-      }, 1000)
-    } catch (err) {
-      setError('Failed to add health record.')
-    } finally {
-      setSubmitting(false)
+      setFormData({ weight: '', blood_pressure: '', sugar_level: '', cholesterol: '' })
+      fetchData()
+    } catch (error) {
+      toast.error('Failed to add record')
     }
   }
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return '#22c55e'
-    if (score >= 60) return '#f59e0b'
-    return '#ef4444'
-  }
-
-  const getTrendIcon = (trend) => {
-    if (trend === 'increasing') return '↑'
-    if (trend === 'decreasing') return '↓'
-    return '→'
-  }
-
-  const getTrendColor = (trend, metric) => {
-    if (metric === 'weight') {
-      return trend === 'decreasing' ? '#22c55e' : trend === 'increasing' ? '#ef4444' : c.taupe
-    }
-    return trend === 'stable' ? '#22c55e' : c.taupe
-  }
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c.white }}>
-        <p style={{ color: c.taupe }}>Loading health data...</p>
-      </div>
-    )
-  }
+  const chartData = records.slice(-7).map(r => ({ date: new Date(r.recorded_at).toLocaleDateString(), weight: r.weight }))
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
-
-      {/* header */}
-      <div style={{ backgroundColor: c.dark, padding: '20px 32px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <button onClick={() => navigate('/dashboard')}
-            style={{ background: 'none', border: 'none', color: c.peach, cursor: 'pointer', fontSize: 14, marginBottom: 12 }}>
-            ← Back to Dashboard
-          </button>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h1 style={{ color: c.white, fontSize: 28, fontWeight: 800, margin: 0 }}>Health Prediction</h1>
-              <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>AI powered health analysis and predictions</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white p-6">
+            <div className="flex justify-between items-center">
+              <button onClick={() => navigate('/dashboard')} className="text-white hover:text-gray-200">← Back</button>
+              <h1 className="text-2xl font-bold">Health Prediction</h1>
+              <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-white/20 rounded-lg">+ Add Record</button>
             </div>
-            <button onClick={() => setShowForm(!showForm)}
-              style={{ backgroundColor: c.peach, color: c.dark, border: 'none', padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              + Log Health Record
-            </button>
+          </div>
+
+          <div className="p-6">
+            {showForm && (
+              <form onSubmit={handleSubmit} className="mb-8 p-4 bg-gray-50 rounded-xl">
+                <h3 className="font-semibold mb-4">Log Health Metrics</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="number" placeholder="Weight (kg)" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} className="input-modern" />
+                  <input type="text" placeholder="Blood Pressure" value={formData.blood_pressure} onChange={(e) => setFormData({ ...formData, blood_pressure: e.target.value })} className="input-modern" />
+                  <input type="number" placeholder="Blood Sugar (mg/dL)" value={formData.sugar_level} onChange={(e) => setFormData({ ...formData, sugar_level: e.target.value })} className="input-modern" />
+                  <input type="number" placeholder="Cholesterol (mg/dL)" value={formData.cholesterol} onChange={(e) => setFormData({ ...formData, cholesterol: e.target.value })} className="input-modern" />
+                </div>
+                <button type="submit" className="mt-4 btn-primary w-full">Save Record</button>
+              </form>
+            )}
+
+            {prediction ? (
+              <>
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="text-center p-4 bg-indigo-50 rounded-xl">
+                    <div className="text-3xl font-bold text-indigo-600">{prediction.health_score}</div>
+                    <div className="text-sm text-gray-600">Health Score</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-xl">
+                    <div className="text-xl font-semibold capitalize">{prediction.bmi_category}</div>
+                    <div className="text-sm text-gray-600">BMI Category</div>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="font-semibold mb-4">Weight Trend</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="weight" stroke="#6366f1" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3">AI Recommendations</h3>
+                  <ul className="space-y-2">
+                    {prediction.recommendations?.map((rec, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-600">
+                        <span className="text-indigo-500">💡</span> {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <button onClick={() => navigate('/health-report')} className="mt-6 btn-primary w-full py-3">
+                  View Full Health Report →
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">📊</div>
+                <h2 className="text-xl font-semibold mb-2">No Health Data Yet</h2>
+                <p className="text-gray-500 mb-6">Log at least 2 health records to get AI predictions</p>
+                <button onClick={() => setShowForm(true)} className="btn-primary">Log First Record</button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 32px' }}>
-
-        {/* log form */}
-        {showForm && (
-          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 28, marginBottom: 32 }}>
-            <h3 style={{ color: c.dark, fontWeight: 800, marginBottom: 20 }}>Log Health Record</h3>
-
-            {error && <div style={{ backgroundColor: '#fde8e8', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
-            {success && <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{success}</div>}
-
-            <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
-                {[
-                  { name: 'weight', label: 'Weight (kg)', placeholder: 'e.g., 70' },
-                  { name: 'blood_pressure', label: 'Blood Pressure', placeholder: 'e.g., 120/80' },
-                  { name: 'sugar_level', label: 'Blood Sugar (mg/dL)', placeholder: 'e.g., 95' },
-                  { name: 'cholesterol', label: 'Cholesterol (mg/dL)', placeholder: 'e.g., 180' },
-                ].map((field, i) => (
-                  <div key={i}>
-                    <label style={{ display: 'block', color: c.taupe, fontSize: 12, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>{field.label}</label>
-                    <input
-                      type={field.name === 'blood_pressure' ? 'text' : 'number'}
-                      name={field.name}
-                      value={formData[field.name]}
-                      onChange={handleChange}
-                      placeholder={field.placeholder}
-                      style={{ width: '100%', border: `1.5px solid ${c.peach}`, borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', color: c.taupe, fontSize: 12, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>Notes</label>
-                <input
-                  type="text"
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Any additional notes..."
-                  style={{ width: '100%', border: `1.5px solid ${c.peach}`, borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button type="button" onClick={() => setShowForm(false)}
-                  style={{ flex: 1, backgroundColor: 'transparent', border: `1.5px solid ${c.peach}`, color: c.taupe, padding: '12px', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting}
-                  style={{ flex: 1, backgroundColor: c.dark, color: c.white, border: 'none', padding: '12px', borderRadius: 8, cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700, opacity: submitting ? 0.6 : 1 }}>
-                  {submitting ? 'Saving...' : 'Save Record'}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {!prediction ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: 64, marginBottom: 24 }}>🏥</div>
-            <h2 style={{ color: c.dark, fontSize: 24, fontWeight: 800, marginBottom: 12 }}>No Health Data Yet</h2>
-            <p style={{ color: c.taupe, fontSize: 15, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
-              Log at least 2 health records to get AI powered health predictions.
-            </p>
-            <button onClick={() => setShowForm(true)}
-              style={{ backgroundColor: c.dark, color: c.white, border: 'none', padding: '14px 36px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-              Log First Health Record →
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* health score */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, marginBottom: 32, flexWrap: 'wrap' }}>
-              <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 28, textAlign: 'center' }}>
-                <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>Health Score</p>
-                <div style={{ width: 120, height: 120, borderRadius: '50%', border: `8px solid ${getScoreColor(prediction.health_score)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <span style={{ fontSize: 36, fontWeight: 900, color: getScoreColor(prediction.health_score) }}>{prediction.health_score}</span>
-                </div>
-                <p style={{ color: c.dark, fontWeight: 700, fontSize: 15 }}>
-                  {prediction.health_score >= 80 ? 'Excellent' : prediction.health_score >= 60 ? 'Good' : 'Needs Attention'}
-                </p>
-                <p style={{ color: c.taupe, fontSize: 12, marginTop: 4 }}>Based on {prediction.total_records} records</p>
-              </div>
-
-              <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 28 }}>
-                <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>Current Metrics</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  {[
-                    { label: 'Weight', value: prediction.latest_weight ? `${prediction.latest_weight} kg` : 'N/A', trend: prediction.weight_trend, metric: 'weight' },
-                    { label: 'BMI', value: prediction.latest_bmi ? prediction.latest_bmi : 'N/A', trend: prediction.bmi_trend, metric: 'bmi' },
-                    { label: 'Blood Sugar', value: prediction.latest_sugar ? `${prediction.latest_sugar} mg/dL` : 'N/A', trend: prediction.sugar_trend, metric: 'sugar' },
-                    { label: 'Cholesterol', value: prediction.latest_cholesterol ? `${prediction.latest_cholesterol} mg/dL` : 'N/A', trend: prediction.cholesterol_trend, metric: 'cholesterol' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ backgroundColor: `${c.peach}10`, borderRadius: 8, padding: 14 }}>
-                      <p style={{ color: c.taupe, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{item.label}</p>
-                      <p style={{ color: c.dark, fontWeight: 700, fontSize: 18, margin: '4px 0' }}>{item.value}</p>
-                      <p style={{ fontSize: 12, color: getTrendColor(item.trend, item.metric), fontWeight: 600 }}>
-                        {getTrendIcon(item.trend)} {item.trend}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* bmi category */}
-            <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
-              <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>BMI Category</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 32 }}>
-                  {prediction.bmi_category === 'normal' ? '✅' : prediction.bmi_category === 'underweight' ? '⚠️' : '⚠️'}
-                </span>
-                <div>
-                  <p style={{ color: c.dark, fontWeight: 800, fontSize: 20, textTransform: 'capitalize' }}>{prediction.bmi_category}</p>
-                  <p style={{ color: c.taupe, fontSize: 13 }}>
-                    {prediction.bmi_category === 'normal' ? 'Your BMI is in the healthy range.' :
-                     prediction.bmi_category === 'underweight' ? 'Consider increasing calorie intake.' :
-                     prediction.bmi_category === 'overweight' ? 'Consider reducing calorie intake.' :
-                     'Please consult a healthcare professional.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* recommendations */}
-            <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
-              <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>AI Recommendations</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {prediction.recommendations.map((rec, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c.peach, flexShrink: 0, marginTop: 6 }} />
-                    <p style={{ color: c.taupe, fontSize: 14, lineHeight: 1.6 }}>{rec}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* actions */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <button onClick={() => navigate('/health-report')}
-                style={{ backgroundColor: c.dark, color: c.white, border: 'none', padding: '14px 32px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                View Full Health Report →
-              </button>
-              <button onClick={() => setShowForm(true)}
-                style={{ backgroundColor: 'transparent', color: c.taupe, border: `1.5px solid ${c.peach}`, padding: '14px 32px', fontSize: 14, cursor: 'pointer' }}>
-                Log New Record
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </div>
   )

@@ -1,152 +1,94 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { loginUser, getMyProfile } from '../services/authService'
 import { useAuth } from '../context/AuthContext'
-
-const c = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import toast from 'react-hot-toast'
 
 const LoginPage = () => {
   const navigate = useNavigate()
   const { login } = useAuth()
-
-  const [formData, setFormData] = useState({ email: '', password: '' })
-  const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
     
     try {
-        // Step 1: Login to get token
-        const data = await loginUser(formData.email, formData.password)
-        console.log('Login response:', data)
-        
-        // Step 2: Store token in localStorage IMMEDIATELY
-        const token = data.access_token
-        localStorage.setItem('token', token)
-        console.log('Token stored:', token)
-        
-        // Step 3: Now get profile (token will be in headers because of interceptor)
-        const profile = await getMyProfile()
-        console.log('Profile loaded:', profile)
-        
-        // Step 4: Update auth context
-        login(token, profile)
-        
-        // Step 5: Check if profile is complete (has basic info)
-        const isProfileComplete = profile.full_name && profile.age && profile.height && profile.weight
-        
-        if (isProfileComplete) {
-            // Profile complete, go to dashboard
-            navigate('/dashboard')
+      // Login API call
+      const data = await loginUser(email, password)
+      
+      // Get user profile
+      const profile = await getMyProfile()
+      
+      // Store in context
+      login(data.access_token, profile)
+      
+      toast.success('Login successful!')
+      
+      // Redirect based on role AND profile completion
+      if (profile.role === 'admin') {
+        navigate('/admin/dashboard')
+      } else {
+        // Check if profile is complete (has age AND goal)
+        if (!profile.age || !profile.goal) {
+          // First time user - go to profile setup
+          navigate('/basic-info')
         } else {
-            // Profile incomplete, start profile setup
-            navigate('/basic-info')
+          // Existing user - go to dashboard
+          navigate('/dashboard')
         }
-    } catch (err) {
-        console.error('Login error:', err)
-        setError(err.response?.data?.detail || 'Login failed. Please try again.')
-        localStorage.removeItem('token')
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Login failed')
     } finally {
-        setLoading(false)
+      setLoading(false)
     }
-}
+  }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Georgia', serif" }}>
-
-      {/* left panel */}
-      <div style={{ flex: 1, backgroundColor: c.dark, padding: '60px 64px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="hidden md:flex">
-        <Link to="/" style={{ color: c.white, fontWeight: 900, fontSize: 22, letterSpacing: 3, textTransform: 'uppercase', textDecoration: 'none' }}>
-          Alethea
-        </Link>
-        <div>
-          <p style={{ color: c.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 20 }}>
-            — Welcome Back
-          </p>
-          <h2 style={{ color: c.white, fontSize: 'clamp(2.5rem, 4vw, 4rem)', fontWeight: 900, lineHeight: 1, letterSpacing: -2, marginBottom: 24 }}>
-            YOUR HEALTH<br />JOURNEY<br />CONTINUES.
-          </h2>
-          <p style={{ color: c.taupe, fontSize: 15, lineHeight: 1.9, fontFamily: 'sans-serif', maxWidth: 340 }}>
-            Log in to access your personalized meal plans, health analytics, and AI-powered recommendations.
-          </p>
-        </div>
-        <p style={{ color: c.taupe, fontSize: 12, fontFamily: 'sans-serif', letterSpacing: 1 }}>© 2024 Alethea Health Coach</p>
-      </div>
-
-      {/* right panel */}
-      <div style={{ flex: 1, backgroundColor: c.white, padding: '60px 64px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-
-        {/* mobile logo */}
-        <Link to="/" style={{ color: c.dark, fontWeight: 900, fontSize: 20, letterSpacing: 3, textTransform: 'uppercase', textDecoration: 'none', marginBottom: 48, display: 'block' }} className="md:hidden">
-          Alethea
-        </Link>
-
-        <p style={{ color: c.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 16 }}>
-          Account Access
-        </p>
-        <h1 style={{ color: c.dark, fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 900, letterSpacing: -1, marginBottom: 8 }}>
-          Sign In
-        </h1>
-        <p style={{ color: c.taupe, fontSize: 14, fontFamily: 'sans-serif', marginBottom: 48 }}>
-          Don't have an account?{' '}
-          <Link to="/signup" style={{ color: c.dark, fontWeight: 700, textDecoration: 'underline' }}>Create one free</Link>
-        </p>
-
-        {error && (
-          <div style={{ backgroundColor: '#fde8e8', border: '1px solid #f5c6c6', color: '#b91c1c', padding: '12px 16px', fontSize: 14, fontFamily: 'sans-serif', marginBottom: 24 }}>
-            {error}
+    <div className="min-h-screen flex items-center justify-center px-6 bg-gradient-to-br from-indigo-50 via-white to-pink-50">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-2xl font-bold">A</span>
           </div>
-        )}
+          <h1 className="text-3xl font-bold text-gray-800">Welcome Back</h1>
+          <p className="text-gray-500 mt-2">Sign in to continue your health journey</p>
+        </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 400 }}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
-              Email Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
             <input
               type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
               placeholder="you@example.com"
-              style={{ width: '100%', borderBottom: `2px solid ${c.dark}`, border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', boxSizing: 'border-box' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
             <input
               type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
               placeholder="••••••••"
-              style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', boxSizing: 'border-box' }}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'sans-serif', fontSize: 13 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: c.taupe, cursor: 'pointer' }}>
-              <input type="checkbox" style={{ accentColor: c.dark }} />
-              Remember me
+          <div className="flex items-center justify-between">
+            <label className="flex items-center">
+              <input type="checkbox" className="rounded border-gray-300 text-indigo-600" />
+              <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
-            <Link to="/forgot-password" style={{ color: c.taupe, textDecoration: 'underline', fontSize: 13 }}>
+            <Link to="/forgot-password" className="text-sm text-indigo-600 hover:text-indigo-700">
               Forgot password?
             </Link>
           </div>
@@ -154,10 +96,18 @@ const LoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            style={{ backgroundColor: c.dark, color: c.white, padding: '16px', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'sans-serif', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, marginTop: 8 }}>
-            {loading ? 'Signing In...' : 'Sign In →'}
+            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign In →'}
           </button>
         </form>
+
+        <p className="text-center mt-6 text-gray-600">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-indigo-600 font-semibold hover:text-indigo-700">
+            Create Account
+          </Link>
+        </p>
       </div>
     </div>
   )

@@ -1,444 +1,135 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useNavigate, Link } from 'react-router-dom'
-import API from '../services/authService'
-import { 
-  FiPlus, FiList, FiCpu, FiActivity, FiCalendar, 
-  FiTarget, FiAward, FiTrendingUp, FiTrendingDown, 
-  FiMinus, FiLogOut, FiMenu, FiX, FiBarChart2,
-  FiUser, FiSettings, FiHeart, FiCoffee, FiBattery
-} from 'react-icons/fi'
-
-const colors = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import { useMeals } from '../context/MealContext'
+import api from '../services/api'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const DashboardPage = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [recentMeals, setRecentMeals] = useState([])
-  const [healthRecords, setHealthRecords] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [userProfile, setUserProfile] = useState(null)
+  const { user } = useAuth()
+  const { meals, fetchMeals } = useMeals()
+  const [stats, setStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+  const [healthData, setHealthData] = useState([])
 
-  // Fetch real user data from API
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Get current user profile
-        const profileResponse = await API.get('/users/me')
-        setUserProfile(profileResponse.data)
-        console.log('User profile:', profileResponse.data)
-        
-        // Fetch recent meals
-        const mealsResponse = await API.get('/meals')
-        setRecentMeals(mealsResponse.data.slice(0, 5))
-        
-        // Fetch health records
-        const healthResponse = await API.get('/health/records')
-        setHealthRecords(healthResponse.data.slice(0, 3))
-        
-        setLoading(false)
-      } catch (error) {
-        console.error('Error fetching user data:', error)
-        setLoading(false)
-      }
-    }
-    
-    fetchUserData()
+    fetchMeals()
+    fetchHealthData()
   }, [])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  useEffect(() => {
+    const totals = meals.reduce((acc, meal) => ({
+      calories: acc.calories + (meal.calories || 0),
+      protein: acc.protein + (meal.protein || 0),
+      carbs: acc.carbs + (meal.carbs || 0),
+      fat: acc.fat + (meal.fat || 0),
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
+    setStats(totals)
+  }, [meals])
 
-  // Calculate BMI
-  const calculateBMI = (weight, height) => {
-    if (!weight || !height) return null
-    const heightInMeters = height / 100
-    return (weight / (heightInMeters * heightInMeters)).toFixed(1)
-  }
-
-  // Get BMI status
-  const getBMIStatus = (bmi) => {
-    if (!bmi) return 'Not available'
-    if (bmi < 18.5) return 'Underweight'
-    if (bmi >= 18.5 && bmi < 25) return 'Normal'
-    if (bmi >= 25 && bmi < 30) return 'Overweight'
-    return 'Obese'
-  }
-
-  const bmi = calculateBMI(userProfile?.weight, userProfile?.height)
-  const bmiStatus = getBMIStatus(bmi)
-
-  // Calculate today's nutrition from recent meals
-  const today = new Date().toDateString()
-  const todayMeals = recentMeals.filter(meal => {
-    if (!meal.logged_at) return false
-    return new Date(meal.logged_at).toDateString() === today
-  })
-  
-  const todaysNutrition = {
-    calories: { 
-      current: todayMeals.reduce((sum, m) => sum + (m.calories || 0), 0), 
-      target: 2000, 
-      percentage: 0 
-    },
-    protein: { 
-      current: todayMeals.reduce((sum, m) => sum + (m.protein || 0), 0), 
-      target: 120, 
-      percentage: 0 
-    },
-    carbs: { 
-      current: todayMeals.reduce((sum, m) => sum + (m.carbs || 0), 0), 
-      target: 250, 
-      percentage: 0 
-    },
-    fats: { 
-      current: todayMeals.reduce((sum, m) => sum + (m.fats || 0), 0), 
-      target: 65, 
-      percentage: 0 
-    },
-  }
-  
-  // Calculate percentages
-  Object.keys(todaysNutrition).forEach(key => {
-    const current = todaysNutrition[key].current
-    const target = todaysNutrition[key].target
-    todaysNutrition[key].percentage = Math.min(100, Math.round((current / target) * 100))
-  })
-
-  const healthStats = {
-    currentWeight: userProfile?.weight || 0,
-    targetWeight: userProfile?.goal_weight || 65,
-    bmi: bmi || 0,
-    bmiStatus: bmiStatus,
-    streak: 7,
-    mealsLogged: recentMeals.length
+  const fetchHealthData = async () => {
+    try {
+      const response = await api.get('/health/records')
+      const formatted = response.data.slice(-7).map(r => ({
+        date: new Date(r.recorded_at).toLocaleDateString(),
+        weight: r.weight,
+      }))
+      setHealthData(formatted)
+    } catch (error) {
+      console.error('Failed to fetch health data:', error)
+    }
   }
 
   const quickActions = [
-    { icon: FiPlus, label: 'Log Meal', path: '/log-meal', color: colors.peach },
-    { icon: FiList, label: 'Meal History', path: '/meal-history', color: colors.taupe },
-    { icon: FiCpu, label: 'AI Diet Plan', path: '/diet-plan', color: colors.dark },
-    { icon: FiActivity, label: 'Health Analysis', path: '/health-prediction', color: colors.peach },
+    { title: 'Log Meal', icon: '🍽️', path: '/log-meal', color: 'from-blue-500 to-cyan-500' },
+    { title: 'Diet Plan', icon: '🥗', path: '/diet-plan', color: 'from-green-500 to-emerald-500' },
+    { title: 'Health Check', icon: '❤️', path: '/health-prediction', color: 'from-red-500 to-pink-500' },
+    { title: 'Meal History', icon: '📋', path: '/meal-history', color: 'from-purple-500 to-indigo-500' },
   ]
-
-  const navLinks = [
-    { icon: FiUser, label: 'Profile', path: '/profile-settings' },
-    { icon: FiSettings, label: 'Settings', path: '/app-settings' },
-    { icon: FiHeart, label: 'Health Reports', path: '/health-report' },
-    { icon: FiCalendar, label: 'Weekly Plan', path: '/weekly-meal-plan' },
-  ]
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: colors.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 50, height: 50, border: `3px solid ${colors.peach}`, borderTopColor: colors.dark, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
-          <p style={{ color: colors.taupe }}>Loading your dashboard...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.white, fontFamily: "'Segoe UI', sans-serif" }}>
-      
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 40 }} />
-      )}
-      
-      {/* Sidebar */}
-      <aside style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: 260,
-        height: '100%',
-        backgroundColor: colors.dark,
-        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.3s ease',
-        zIndex: 50,
-        overflowY: 'auto'
-      }}>
-        <div style={{ padding: '24px 20px' }}>
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
-            <div style={{ backgroundColor: colors.peach, width: 35, height: 35, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: colors.dark, fontWeight: 'bold', fontSize: 18 }}>A</span>
-            </div>
-            <span style={{ color: colors.white, fontWeight: 'bold', fontSize: 18 }}>Alethea</span>
-          </div>
-          
-          {/* User Info */}
-          <div style={{ backgroundColor: colors.taupe, padding: 15, borderRadius: 10, marginBottom: 30 }}>
-            <p style={{ color: colors.white, fontSize: 14, fontWeight: 500 }}>{userProfile?.full_name || user?.full_name || user?.email}</p>
-            <p style={{ color: colors.peach, fontSize: 12, marginTop: 5 }}>{userProfile?.role || 'Member'}</p>
-          </div>
-          
-          {/* Navigation Links */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {navLinks.map((link, i) => (
-              <Link key={i} to={link.path} style={{ display: 'flex', alignItems: 'center', gap: 12, color: colors.taupe, textDecoration: 'none', padding: '10px 12px', borderRadius: 8, transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.peach; e.currentTarget.style.color = colors.dark }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.taupe }}>
-                <link.icon size={18} />
-                <span style={{ fontSize: 14 }}>{link.label}</span>
-              </Link>
-            ))}
-          </div>
-          
-          {/* Logout Button */}
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 12, backgroundColor: 'transparent', border: `1px solid ${colors.taupe}`, color: colors.taupe, padding: '10px 12px', borderRadius: 8, width: '100%', marginTop: 40, cursor: 'pointer', fontSize: 14 }}>
-            <FiLogOut size={18} />
-            Logout
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-3xl font-bold">Welcome back, {user?.full_name?.split(' ')[0]}! 👋</h1>
+          <p className="text-indigo-100 mt-2">Track your progress and stay on top of your health goals</p>
         </div>
-      </aside>
-      
-      {/* Main Content */}
-      <main style={{ marginLeft: sidebarOpen ? 0 : 0, transition: 'margin-left 0.3s ease' }}>
-        
-        {/* Header */}
-        <nav style={{ backgroundColor: colors.white, borderBottom: `1px solid ${colors.peach}`, padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 30 }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: colors.dark }}>
-            {sidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-          </button>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-            <span style={{ fontSize: 13, color: colors.taupe }}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </span>
-            <div style={{ width: 40, height: 40, backgroundColor: colors.peach, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: colors.dark, fontWeight: 'bold' }}>{userProfile?.full_name?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0)}</span>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[
+            { label: 'Total Calories', value: stats.calories, unit: 'kcal', icon: '🔥', color: 'orange' },
+            { label: 'Protein', value: stats.protein, unit: 'g', icon: '💪', color: 'blue' },
+            { label: 'Carbs', value: stats.carbs, unit: 'g', icon: '🌾', color: 'green' },
+            { label: 'Fat', value: stats.fat, unit: 'g', icon: '🥑', color: 'red' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">{stat.icon}</span>
+                <span className={`text-${stat.color}-500 text-sm font-semibold`}>Today</span>
+              </div>
+              <div className="text-3xl font-bold text-gray-800">{Math.round(stat.value)}</div>
+              <div className="text-gray-500 text-sm">{stat.label}</div>
             </div>
-          </div>
-        </nav>
-        
-        {/* Dashboard Content */}
-        <div style={{ padding: '24px' }}>
-          
-          {/* Welcome Section */}
-          <div style={{ marginBottom: 32 }}>
-            <h1 style={{ color: colors.dark, fontSize: 28, fontWeight: 700, marginBottom: 8 }}>
-              Welcome back, {userProfile?.full_name?.split(' ')[0] || 'User'}! 👋
-            </h1>
-            <p style={{ color: colors.taupe }}>Here's your health summary for today</p>
-          </div>
-          
-          {/* Quick Actions */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-            {quickActions.map((action, i) => (
-              <Link key={i} to={action.path} style={{ textDecoration: 'none' }}>
-                <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 12, padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.peach; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = colors.white; e.currentTarget.style.transform = 'translateY(0)' }}>
-                  <action.icon size={28} color={action.color} style={{ marginBottom: 12 }} />
-                  <h3 style={{ color: colors.dark, fontSize: 14, fontWeight: 600 }}>{action.label}</h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-          
-          {/* Two Column Layout */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, marginBottom: 32 }}>
-            
-            {/* Nutrition Summary */}
-            <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2 style={{ color: colors.dark, fontSize: 18, fontWeight: 600 }}>Today's Nutrition</h2>
-                <FiBarChart2 color={colors.peach} size={20} />
-              </div>
-              
-              {Object.entries(todaysNutrition).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ color: colors.taupe, fontSize: 13, textTransform: 'capitalize' }}>{key}</span>
-                    <span style={{ color: colors.dark, fontWeight: 500, fontSize: 13 }}>
-                      {value.current} / {value.target} {key === 'calories' ? 'kcal' : 'g'}
-                    </span>
-                  </div>
-                  <div style={{ backgroundColor: '#f0f0f0', borderRadius: 10, overflow: 'hidden', height: 8 }}>
-                    <div style={{ width: `${value.percentage}%`, backgroundColor: colors.peach, height: '100%', borderRadius: 10 }} />
-                  </div>
-                </div>
-              ))}
-              
-              {todayMeals.length === 0 && (
-                <p style={{ textAlign: 'center', marginTop: 20, color: colors.taupe, fontSize: 13 }}>
-                  No meals logged today. Click "Log Meal" to get started!
-                </p>
-              )}
-              
-              <Link to="/log-meal" style={{ display: 'block', textAlign: 'center', marginTop: 20, color: colors.peach, fontSize: 13, textDecoration: 'none' }}>
-                + Log a meal →
-              </Link>
-            </div>
-            
-            {/* Health Stats Overview */}
-            <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2 style={{ color: colors.dark, fontSize: 18, fontWeight: 600 }}>Your Health Overview</h2>
-                <FiHeart color={colors.peach} size={20} />
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                <div>
-                  <p style={{ color: colors.taupe, fontSize: 12 }}>Current Weight</p>
-                  <p style={{ color: colors.dark, fontSize: 28, fontWeight: 700 }}>{healthStats.currentWeight || '—'} kg</p>
-                  <p style={{ color: colors.taupe, fontSize: 11 }}>Target: {healthStats.targetWeight || '—'} kg</p>
-                </div>
-                <div>
-                  <p style={{ color: colors.taupe, fontSize: 12 }}>BMI</p>
-                  <p style={{ color: colors.dark, fontSize: 28, fontWeight: 700 }}>{healthStats.bmi || '—'}</p>
-                  <p style={{ color: colors.peach, fontSize: 11 }}>{healthStats.bmiStatus}</p>
-                </div>
-              </div>
-              
-              {/* Display other user info */}
-              <div style={{ borderTop: `1px solid ${colors.peach}`, paddingTop: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: colors.taupe, fontSize: 13 }}>Height</span>
-                  <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.height || '—'} cm</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: colors.taupe, fontSize: 13 }}>Age</span>
-                  <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.age || '—'} years</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: colors.taupe, fontSize: 13 }}>Gender</span>
-                  <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.gender ? userProfile.gender.charAt(0).toUpperCase() + userProfile.gender.slice(1) : '—'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: colors.taupe, fontSize: 13 }}>Goal</span>
-                  <span style={{ color: colors.dark, fontWeight: 500 }}>{userProfile?.goal ? userProfile.goal.replace('_', ' ').toUpperCase() : 'Not set'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Recent Meals & Health Records */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, marginBottom: 32 }}>
-            
-            {/* Recent Meals */}
-            <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2 style={{ color: colors.dark, fontSize: 18, fontWeight: 600 }}>Recent Meals</h2>
-                <Link to="/meal-history" style={{ color: colors.peach, fontSize: 12, textDecoration: 'none' }}>View all →</Link>
-              </div>
-              
-              {recentMeals.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <FiCoffee size={40} color={colors.taupe} style={{ marginBottom: 12 }} />
-                  <p style={{ color: colors.taupe, fontSize: 14 }}>No meals logged yet</p>
-                  <Link to="/log-meal" style={{ color: colors.peach, fontSize: 13, textDecoration: 'none', marginTop: 8, display: 'inline-block' }}>
-                    Log your first meal →
-                  </Link>
-                </div>
-              ) : (
-                recentMeals.map(meal => (
-                  <div key={meal.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${colors.peach}` }}>
-                    <div>
-                      <p style={{ color: colors.dark, fontWeight: 500, marginBottom: 4 }}>{meal.meal_name}</p>
-                      <p style={{ color: colors.taupe, fontSize: 12 }}>{meal.meal_type} • {meal.logged_at ? new Date(meal.logged_at).toLocaleTimeString() : 'Today'}</p>
-                    </div>
-                    <p style={{ color: colors.peach, fontWeight: 600 }}>{meal.calories || 0} kcal</p>
-                  </div>
-                ))
-              )}
-            </div>
-            
-            {/* Health Goal Progress */}
-            <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.peach}`, borderRadius: 16, padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2 style={{ color: colors.dark, fontSize: 18, fontWeight: 600 }}>Your Health Goal</h2>
-                <FiTarget color={colors.peach} size={20} />
-              </div>
-              
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <p style={{ color: colors.dark, fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-                  {userProfile?.goal === 'lose_weight' ? '🎯 Lose Weight' : 
-                   userProfile?.goal === 'gain_muscle' ? '💪 Gain Muscle' :
-                   userProfile?.goal === 'maintain_weight' ? '⚖️ Maintain Weight' :
-                   userProfile?.goal === 'improve_health' ? '❤️ Improve Health' :
-                   userProfile?.goal === 'increase_energy' ? '⚡ Increase Energy' : 'Set a goal'}
-                </p>
-                <p style={{ color: colors.taupe, fontSize: 13 }}>
-                  Activity Level: {userProfile?.activity_level ? 
-                    userProfile.activity_level.charAt(0).toUpperCase() + userProfile.activity_level.slice(1) : 'Not set'}
-                </p>
-              </div>
-              
-              {userProfile?.goal === 'lose_weight' && healthStats.currentWeight > 0 && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ color: colors.taupe, fontSize: 13 }}>Progress to goal</span>
-                    <span style={{ color: colors.dark, fontSize: 13, fontWeight: 500 }}>
-                      {Math.round(Math.max(0, Math.min(100, ((healthStats.currentWeight - healthStats.targetWeight) / (healthStats.currentWeight - healthStats.targetWeight)) * 100)))}%
-                    </span>
-                  </div>
-                  <div style={{ backgroundColor: '#f0f0f0', borderRadius: 10, overflow: 'hidden', height: 8 }}>
-                    <div style={{ width: '30%', backgroundColor: colors.peach, height: '100%', borderRadius: 10 }} />
-                  </div>
-                </div>
-              )}
-              
-              {/* Streak and Stats */}
-              <div style={{ borderTop: `1px solid ${colors.peach}`, paddingTop: 16, marginTop: 16, display: 'flex', justifyContent: 'space-around' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <FiAward size={20} color={colors.peach} />
-                  <p style={{ color: colors.dark, fontSize: 20, fontWeight: 700, marginTop: 5 }}>{healthStats.streak}</p>
-                  <p style={{ color: colors.taupe, fontSize: 11 }}>Day Streak</p>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <FiCoffee size={20} color={colors.peach} />
-                  <p style={{ color: colors.dark, fontSize: 20, fontWeight: 700, marginTop: 5 }}>{healthStats.mealsLogged}</p>
-                  <p style={{ color: colors.taupe, fontSize: 11 }}>Total Meals</p>
-                </div>
-              </div>
-              
-              <Link to="/goals-health" style={{ display: 'block', textAlign: 'center', marginTop: 20, color: colors.peach, fontSize: 13, textDecoration: 'none' }}>
-                Update your goals →
-              </Link>
-            </div>
-          </div>
-          
-          {/* AI Insight Card */}
-          <div style={{ marginTop: 32, backgroundColor: colors.dark, borderRadius: 16, padding: 24, background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.taupe} 100%)` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <FiCpu size={24} color={colors.peach} />
-              <h3 style={{ color: colors.white, fontSize: 16, fontWeight: 600 }}>AI Health Insight</h3>
-            </div>
-            <p style={{ color: colors.taupe, fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
-              {todayMeals.length === 0 
-                ? `Welcome to Alethea! Start logging your meals to receive personalized AI recommendations.`
-                : userProfile?.goal === 'lose_weight' 
-                ? `Based on your profile, you're aiming to lose weight. Keep tracking your daily calories. Your average intake today is ${todaysNutrition.calories.current} kcal.`
-                : userProfile?.goal === 'gain_muscle'
-                ? `Great goal to gain muscle! Focus on protein-rich foods. Today's protein intake is ${todaysNutrition.protein.current}g.`
-                : `You're making great progress! Continue logging meals to get better insights and recommendations.`}
-            </p>
-            <Link to="/diet-plan" style={{ color: colors.peach, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
-              View personalized diet plan →
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {quickActions.map((action, i) => (
+            <Link key={i} to={action.path} className={`bg-gradient-to-r ${action.color} p-6 rounded-2xl text-white hover:shadow-xl transition-all transform hover:-translate-y-1`}>
+              <div className="text-3xl mb-2">{action.icon}</div>
+              <div className="font-semibold">{action.title}</div>
             </Link>
-          </div>
-          
+          ))}
         </div>
-      </main>
-      
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Weight Trend */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">📊 Weight Trend</h3>
+            {healthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={healthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="weight" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-12 text-gray-400">No data yet. Start logging your health!</div>
+            )}
+          </div>
+
+          {/* Recent Meals */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">🍽️ Recent Meals</h3>
+              <Link to="/meal-history" className="text-indigo-600 text-sm">View All →</Link>
+            </div>
+            {meals.slice(0, 5).map((meal, i) => (
+              <div key={i} className="flex justify-between items-center py-3 border-b border-gray-100">
+                <div>
+                  <div className="font-medium">{meal.food_name}</div>
+                  <div className="text-sm text-gray-500 capitalize">{meal.meal_type}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold">{Math.round(meal.calories || 0)} kcal</div>
+                  <div className="text-xs text-gray-400">{meal.protein}g P • {meal.carbs}g C • {meal.fat}g F</div>
+                </div>
+              </div>
+            ))}
+            {meals.length === 0 && (
+              <div className="text-center py-8 text-gray-400">No meals logged today</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

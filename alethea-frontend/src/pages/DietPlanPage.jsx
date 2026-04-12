@@ -1,154 +1,104 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import API from '../services/authService'
-
-const c = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import api from '../services/api'
+import toast from 'react-hot-toast'
 
 const DietPlanPage = () => {
   const navigate = useNavigate()
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchPlan()
   }, [])
 
-const fetchPlan = async () => {
+  const fetchPlan = async () => {
     try {
-        const response = await API.get('/diet/plan')
-        if (response.data.plan_data) {
-            setPlan(response.data.plan_data)
-        }
-    } catch (err) {
-        console.error('Error fetching plan:', err)
+      const response = await api.get('/diet/plan')
+      if (response.data.plan_data) setPlan(response.data.plan_data)
+    } catch (error) {
+      console.error('Failed to fetch plan:', error)
     } finally {
-        setLoading(false)
+      setLoading(false)
     }
-}
+  }
 
   const generatePlan = async () => {
     setGenerating(true)
-    setError('')
     try {
-      const response = await API.post('/diet/generate')
+      const response = await api.post('/diet/generate')
       setPlan(response.data.plan_data)
-    } catch (err) {
-      setError('Failed to generate plan. Please complete your profile first.')
+      toast.success('Diet plan generated!')
+    } catch (error) {
+      toast.error('Please complete your profile first')
     } finally {
       setGenerating(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c.white }}>
-        <p style={{ color: c.taupe }}>Loading your diet plan...</p>
-      </div>
-    )
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
-
-      {/* header */}
-      <div style={{ backgroundColor: c.dark, padding: '20px 32px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <button onClick={() => navigate('/dashboard')}
-            style={{ background: 'none', border: 'none', color: c.peach, cursor: 'pointer', fontSize: 14, marginBottom: 12 }}>
-            ← Back to Dashboard
-          </button>
-          <h1 style={{ color: c.white, fontSize: 28, fontWeight: 800, margin: 0 }}>Your Diet Plan</h1>
-          <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>AI generated personalized nutrition plan</p>
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 32px' }}>
-
-        {error && (
-          <div style={{ backgroundColor: '#fde8e8', color: '#b91c1c', padding: '12px 16px', borderRadius: 8, marginBottom: 24, fontSize: 14 }}>
-            {error}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white p-6">
+            <button onClick={() => navigate('/dashboard')} className="mb-4 text-white hover:text-gray-200">← Back</button>
+            <h1 className="text-2xl font-bold">Your AI Diet Plan</h1>
+            <p className="text-indigo-100 mt-1">Personalized for your health goals</p>
           </div>
-        )}
 
-        {!plan ? (
-          // no plan yet
-          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: 64, marginBottom: 24 }}>🥗</div>
-            <h2 style={{ color: c.dark, fontSize: 24, fontWeight: 800, marginBottom: 12 }}>No Diet Plan Yet</h2>
-            <p style={{ color: c.taupe, fontSize: 15, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
-              Generate your personalized AI diet plan based on your health profile and goals.
-            </p>
-            <button onClick={generatePlan} disabled={generating}
-              style={{ backgroundColor: c.dark, color: c.white, border: 'none', padding: '16px 48px', fontSize: 15, fontWeight: 700, cursor: generating ? 'not-allowed' : 'pointer', opacity: generating ? 0.6 : 1, letterSpacing: 1 }}>
-              {generating ? 'Generating...' : 'Generate My Diet Plan →'}
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* macro summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 40 }}>
-              {[
-                { label: 'Daily Calories', value: plan.daily_calories, unit: 'kcal', icon: '🔥' },
-                { label: 'Protein', value: plan.protein_g, unit: 'g/day', icon: '💪' },
-                { label: 'Carbs', value: plan.carbs_g, unit: 'g/day', icon: '🌾' },
-                { label: 'Fat', value: plan.fat_g, unit: 'g/day', icon: '🥑' },
-              ].map((item, i) => (
-                <div key={i} style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 20, textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>
-                  <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>{item.label}</p>
-                  <p style={{ color: c.dark, fontSize: 28, fontWeight: 800, margin: '4px 0' }}>{item.value}</p>
-                  <p style={{ color: c.taupe, fontSize: 12 }}>{item.unit}</p>
+          <div className="p-6">
+            {!plan ? (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">🥗</div>
+                <h2 className="text-xl font-semibold mb-2">No Diet Plan Yet</h2>
+                <p className="text-gray-500 mb-6">Complete your profile to get a personalized AI diet plan</p>
+                <button onClick={generatePlan} disabled={generating} className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-8 py-3 rounded-xl disabled:opacity-50">
+                  {generating ? 'Generating...' : 'Generate My Plan →'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  <div className="text-center p-4 bg-indigo-50 rounded-xl">
+                    <div className="text-2xl font-bold text-indigo-600">{plan.daily_calories}</div>
+                    <div className="text-sm text-gray-600">Daily Calories</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-xl">
+                    <div className="text-2xl font-bold text-green-600">{plan.protein_g}g</div>
+                    <div className="text-sm text-gray-600">Protein</div>
+                  </div>
+                  <div className="text-center p-4 bg-orange-50 rounded-xl">
+                    <div className="text-2xl font-bold text-orange-600">{plan.carbs_g}g</div>
+                    <div className="text-sm text-gray-600">Carbs</div>
+                  </div>
                 </div>
-              ))}
-            </div>
 
-            {/* goal and diet type */}
-            <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24, marginBottom: 32, display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-              <div>
-                <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Your Goal</p>
-                <p style={{ color: c.dark, fontWeight: 700, fontSize: 16, marginTop: 4 }}>{plan.goal || 'Maintain Weight'}</p>
-              </div>
-              <div>
-                <p style={{ color: c.taupe, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Diet Type</p>
-                <p style={{ color: c.dark, fontWeight: 700, fontSize: 16, marginTop: 4 }}>{plan.diet_type || 'Balanced'}</p>
-              </div>
-            </div>
-
-            {/* tips */}
-            {plan.tips && (
-              <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24, marginBottom: 32 }}>
-                <h3 style={{ color: c.dark, fontWeight: 800, fontSize: 16, marginBottom: 16 }}>💡 Nutrition Tips</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {plan.tips.map((tip, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c.peach, flexShrink: 0, marginTop: 6 }} />
-                      <p style={{ color: c.taupe, fontSize: 14, lineHeight: 1.6 }}>{tip}</p>
-                    </div>
-                  ))}
+                <div className="mb-8">
+                  <h3 className="font-semibold mb-3">💡 Daily Tips</h3>
+                  <ul className="space-y-2">
+                    {plan.tips?.map((tip, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-600">
+                        <span className="text-indigo-500">✓</span> {tip}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+
+                <div className="flex gap-4">
+                  <button onClick={() => navigate('/weekly-meal-plan')} className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 rounded-xl">
+                    View Weekly Plan →
+                  </button>
+                  <button onClick={generatePlan} className="px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50">
+                    Regenerate
+                  </button>
+                </div>
+              </>
             )}
-
-            {/* actions */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <button onClick={() => navigate('/weekly-meal-plan')}
-                style={{ backgroundColor: c.dark, color: c.white, border: 'none', padding: '14px 32px', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>
-                View Weekly Meal Plan →
-              </button>
-              <button onClick={generatePlan} disabled={generating}
-                style={{ backgroundColor: 'transparent', color: c.taupe, border: `1.5px solid ${c.peach}`, padding: '14px 32px', fontSize: 14, cursor: 'pointer' }}>
-                {generating ? 'Regenerating...' : 'Regenerate Plan'}
-              </button>
-            </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   )

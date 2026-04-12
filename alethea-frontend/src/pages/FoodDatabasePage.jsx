@@ -1,207 +1,146 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import API from '../services/authService'
-
-const c = {
-  dark: '#1a0405',
-  taupe: '#7a6058',
-  peach: '#d4a090',
-  white: '#ffffff',
-}
+import api from '../services/api'
+import toast from 'react-hot-toast'
 
 const FoodDatabasePage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [foods, setFoods] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [searching, setSearching] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '', category: '', calories_per_100g: '', protein_per_100g: '',
-    carbs_per_100g: '', fats_per_100g: '', fiber_per_100g: ''
+  const [newFood, setNewFood] = useState({
+    name: '', category: '', calories_per_100g: '', protein_per_100g: '', carbs_per_100g: '', fats_per_100g: ''
   })
-  const [saving, setSaving] = useState(false)
-  const [success, setSuccess] = useState('')
 
-  useEffect(() => {
-    if (user?.role !== 'admin') {
-      navigate('/dashboard')
-    }
-  }, [user])
-
-  const searchFood = async () => {
-    if (!search.trim()) return
-    setSearching(true)
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+    setLoading(true)
     try {
-      const response = await API.get(`/food/search?query=${encodeURIComponent(search)}&limit=20`)
-      setFoods(response.data.results || [])
-    } catch (err) {
-      console.error('Error searching food:', err)
+      const response = await api.get(`/food/search?query=${searchQuery}`)
+      setResults(response.data.results || [])
+    } catch (error) {
+      toast.error('Search failed')
     } finally {
-      setSearching(false)
+      setLoading(false)
     }
-  }
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const handleAddFood = async (e) => {
     e.preventDefault()
-    setSaving(true)
     try {
-      await API.post('/food/add', {
-        name: formData.name,
-        category: formData.category,
-        calories_per_100g: formData.calories_per_100g ? parseFloat(formData.calories_per_100g) : null,
-        protein_per_100g: formData.protein_per_100g ? parseFloat(formData.protein_per_100g) : null,
-        carbs_per_100g: formData.carbs_per_100g ? parseFloat(formData.carbs_per_100g) : null,
-        fats_per_100g: formData.fats_per_100g ? parseFloat(formData.fats_per_100g) : null,
-        fiber_per_100g: formData.fiber_per_100g ? parseFloat(formData.fiber_per_100g) : null,
-      })
-      setSuccess('Food item added successfully!')
+      await api.post('/food/add', newFood)
+      toast.success('Food item added!')
       setShowAddForm(false)
-      setFormData({ name: '', category: '', calories_per_100g: '', protein_per_100g: '', carbs_per_100g: '', fats_per_100g: '', fiber_per_100g: '' })
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (err) {
-      console.error('Error adding food:', err)
-    } finally {
-      setSaving(false)
+      setNewFood({ name: '', category: '', calories_per_100g: '', protein_per_100g: '', carbs_per_100g: '', fats_per_100g: '' })
+    } catch (error) {
+      toast.error('Failed to add food')
     }
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
-
-      <nav style={{ backgroundColor: c.dark, padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ color: c.white, fontWeight: 900, fontSize: 20, letterSpacing: 2 }}>ALETHEA</span>
-          <span style={{ backgroundColor: c.peach, color: c.dark, fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, textTransform: 'uppercase' }}>Admin</span>
-        </div>
-        <div style={{ display: 'flex', gap: 24 }}>
-          {[
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Users', path: '/admin/users' },
-            { label: 'Food DB', path: '/admin/food-database' },
-            { label: 'Analytics', path: '/admin/analytics' },
-          ].map((item, i) => (
-            <Link key={i} to={item.path} style={{ color: i === 2 ? c.peach : c.taupe, textDecoration: 'none', fontSize: 13, letterSpacing: 1 }}>{item.label}</Link>
-          ))}
+    <div className="min-h-screen bg-gray-100">
+      {/* Admin Navbar */}
+      <nav className="bg-gradient-to-r from-indigo-900 to-purple-900 text-white px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-indigo-900 font-bold">A</span>
+            </div>
+            <span className="font-bold text-xl">Alethea Admin</span>
+          </div>
+          <div className="flex items-center space-x-6">
+            <Link to="/admin/dashboard" className="hover:text-indigo-300">Dashboard</Link>
+            <Link to="/admin/users" className="hover:text-indigo-300">Users</Link>
+            <Link to="/admin/food-database" className="text-indigo-300">Food DB</Link>
+            <Link to="/admin/analytics" className="hover:text-indigo-300">Analytics</Link>
+          </div>
         </div>
       </nav>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px' }}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <p style={{ color: c.peach, fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 8 }}>Admin Panel</p>
-            <h1 style={{ color: c.dark, fontSize: 32, fontWeight: 900, letterSpacing: -1, margin: 0 }}>Food Database</h1>
-            <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>Search and manage food items from Open Food Facts</p>
+            <h1 className="text-3xl font-bold">Food Database</h1>
+            <p className="text-gray-600 mt-1">Search and manage food items</p>
           </div>
-          <button onClick={() => setShowAddForm(!showAddForm)}
-            style={{ backgroundColor: c.dark, color: c.white, border: 'none', padding: '12px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+          >
             + Add Custom Food
           </button>
         </div>
 
-        {success && (
-          <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '12px 16px', borderRadius: 8, marginBottom: 24, fontSize: 14 }}>
-            ✅ {success}
+        {/* Search Bar */}
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <div className="flex gap-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Search for food (e.g., apple, rice, chicken)..."
+              className="flex-1 px-4 py-3 border rounded-lg"
+            />
+            <button onClick={handleSearch} disabled={loading} className="btn-primary px-6 py-3">
+              {loading ? 'Searching...' : 'Search'}
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* add form */}
+        {/* Add Food Form */}
         {showAddForm && (
-          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 28, marginBottom: 32 }}>
-            <h3 style={{ color: c.dark, fontWeight: 800, marginBottom: 20 }}>Add Custom Food Item</h3>
-            <form onSubmit={handleAddFood}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
-                {[
-                  { name: 'name', label: 'Food Name', required: true },
-                  { name: 'category', label: 'Category' },
-                  { name: 'calories_per_100g', label: 'Calories / 100g' },
-                  { name: 'protein_per_100g', label: 'Protein / 100g' },
-                  { name: 'carbs_per_100g', label: 'Carbs / 100g' },
-                  { name: 'fats_per_100g', label: 'Fat / 100g' },
-                  { name: 'fiber_per_100g', label: 'Fiber / 100g' },
-                ].map((field, i) => (
-                  <div key={i}>
-                    <label style={{ display: 'block', color: c.taupe, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{field.label}</label>
-                    <input
-                      type={field.name === 'name' || field.name === 'category' ? 'text' : 'number'}
-                      name={field.name}
-                      value={formData[field.name]}
-                      onChange={handleChange}
-                      required={field.required}
-                      step="0.1"
-                      style={{ width: '100%', border: `1.5px solid ${c.peach}`, borderRadius: 6, padding: '10px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button type="button" onClick={() => setShowAddForm(false)}
-                  style={{ flex: 1, backgroundColor: 'transparent', border: `1.5px solid ${c.peach}`, color: c.taupe, padding: '12px', cursor: 'pointer', borderRadius: 6 }}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving}
-                  style={{ flex: 1, backgroundColor: c.dark, color: c.white, border: 'none', padding: '12px', cursor: 'pointer', borderRadius: 6, fontWeight: 700, opacity: saving ? 0.6 : 1 }}>
-                  {saving ? 'Saving...' : 'Add Food Item'}
-                </button>
+          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h3 className="text-lg font-semibold mb-4">Add Custom Food Item</h3>
+            <form onSubmit={handleAddFood} className="grid grid-cols-2 gap-4">
+              <input type="text" placeholder="Food Name" value={newFood.name} onChange={(e) => setNewFood({ ...newFood, name: e.target.value })} className="input-modern" required />
+              <input type="text" placeholder="Category" value={newFood.category} onChange={(e) => setNewFood({ ...newFood, category: e.target.value })} className="input-modern" />
+              <input type="number" placeholder="Calories per 100g" value={newFood.calories_per_100g} onChange={(e) => setNewFood({ ...newFood, calories_per_100g: e.target.value })} className="input-modern" />
+              <input type="number" placeholder="Protein per 100g" value={newFood.protein_per_100g} onChange={(e) => setNewFood({ ...newFood, protein_per_100g: e.target.value })} className="input-modern" />
+              <input type="number" placeholder="Carbs per 100g" value={newFood.carbs_per_100g} onChange={(e) => setNewFood({ ...newFood, carbs_per_100g: e.target.value })} className="input-modern" />
+              <input type="number" placeholder="Fat per 100g" value={newFood.fats_per_100g} onChange={(e) => setNewFood({ ...newFood, fats_per_100g: e.target.value })} className="input-modern" />
+              <div className="col-span-2 flex gap-4">
+                <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 px-6 py-3 border rounded-lg">Cancel</button>
+                <button type="submit" className="flex-1 btn-primary py-3">Add Food Item</button>
               </div>
             </form>
           </div>
         )}
 
-        {/* search */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-          <input
-            type="text"
-            placeholder="Search food database (e.g. apple, rice, chicken)..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchFood()}
-            style={{ flex: 1, border: `1.5px solid ${c.peach}`, borderRadius: 8, padding: '12px 16px', fontSize: 14, outline: 'none' }}
-          />
-          <button onClick={searchFood} disabled={searching}
-            style={{ backgroundColor: c.dark, color: c.white, border: 'none', padding: '0 28px', cursor: searching ? 'not-allowed' : 'pointer', borderRadius: 8, fontWeight: 700, opacity: searching ? 0.6 : 1 }}>
-            {searching ? 'Searching...' : 'Search'}
-          </button>
-        </div>
-
-        {/* results */}
-        {foods.length > 0 && (
-          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ backgroundColor: c.dark }}>
-                  {['Food Name', 'Brand', 'Calories/100g', 'Protein', 'Carbs', 'Fat'].map((h, i) => (
-                    <th key={i} style={{ padding: '12px 16px', color: i === 0 ? c.white : c.peach, textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {foods.map((food, i) => (
-                  <tr key={i} style={{ borderTop: `1px solid ${c.peach}20`, backgroundColor: i % 2 === 0 ? c.white : `${c.peach}05` }}>
-                    <td style={{ padding: '12px 16px', color: c.dark, fontWeight: 600 }}>{food.food_name || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: c.taupe }}>{food.brand || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: c.dark }}>{food.calories ? `${Math.round(food.calories)} kcal` : '-'}</td>
-                    <td style={{ padding: '12px 16px', color: c.taupe }}>{food.protein ? `${food.protein}g` : '-'}</td>
-                    <td style={{ padding: '12px 16px', color: c.taupe }}>{food.carbs ? `${food.carbs}g` : '-'}</td>
-                    <td style={{ padding: '12px 16px', color: c.taupe }}>{food.fat ? `${food.fat}g` : '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Search Results */}
+        {results.length > 0 && (
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b">
+              <h3 className="font-semibold">Search Results ({results.length})</h3>
+            </div>
+            <div className="divide-y">
+              {results.map((food, i) => (
+                <div key={i} className="px-6 py-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium">{food.food_name}</div>
+                      <div className="text-sm text-gray-500">{food.brand || 'Generic'}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{food.calories ? `${Math.round(food.calories)} kcal` : '-'}</div>
+                      <div className="text-xs text-gray-400">
+                        P: {food.protein || 0}g | C: {food.carbs || 0}g | F: {food.fat || 0}g
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {foods.length === 0 && !searching && (
-          <div style={{ textAlign: 'center', padding: '60px 20px', border: `1px solid ${c.peach}`, borderRadius: 12 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🥗</div>
-            <p style={{ color: c.taupe, fontSize: 15 }}>Search for food items above to browse the database</p>
+        {results.length === 0 && !loading && searchQuery && (
+          <div className="text-center py-12 bg-white rounded-xl shadow-md">
+            <div className="text-4xl mb-2">🍽️</div>
+            <p className="text-gray-500">No food items found. Try a different search term.</p>
           </div>
         )}
       </div>
