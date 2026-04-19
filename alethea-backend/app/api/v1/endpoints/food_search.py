@@ -1,76 +1,70 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from app.services.food_search_service import FoodSearchService
+from sqlalchemy import or_, func
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.models.food_item import FoodItem
+from app.models.food_database import FoodDatabase
 from app.core.database import get_db
-from pydantic import BaseModel
-from typing import Optional
-import uuid
 
-# This line was missing! Create the router
 router = APIRouter()
-
-food_search = FoodSearchService()
-
-# Request schema for adding food
-class FoodItemCreate(BaseModel):
-    name: str
-    category: Optional[str] = None
-    calories_per_100g: Optional[float] = None
-    protein_per_100g: Optional[float] = None
-    carbs_per_100g: Optional[float] = None
-    fats_per_100g: Optional[float] = None
-    fiber_per_100g: Optional[float] = None
 
 @router.get("/search")
 def search_food(
     query: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    results = food_search.search_food(query, limit)
-    return {"success": True, "query": query, "count": len(results), "results": results}
+    # Base search query
+    results = db.query(FoodDatabase).filter(
+        FoodDatabase.food_name.ilike(f'%{query}%')
+    )
+    
+    # Filter by user's diet type
+    user_diet = (current_user.diet_type or 'Non-Veg').lower()
+    
+    if user_diet == 'veg':
+        # Vegetarian: only Veg items
+        results = results.filter(FoodDatabase.diet_type == 'Veg')
+    elif user_diet == 'eggitarian':
+        # Eggitarian: Veg + Eggitarian items
+        results = results.filter(
+            or_(
+                FoodDatabase.diet_type == 'Veg',
+                FoodDatabase.diet_type == 'Eggitarian'
+            )
+        )
+    # Non-Veg: no filter - can see everything
+    
+    results = results.limit(limit).all()
+    
+    return {
+        "success": True, 
+        "query": query, 
+        "count": len(results), 
+        "user_diet": user_diet,
+        "results": [{
+            "food_name": r.food_name,
+            "category": r.category,
+            "meal_type": r.meal_type,
+            "diet_type": r.diet_type,
+            "cuisine": r.cuisine,
+            "calories": r.calories_per_100g,
+            "protein": r.protein_per_100g,
+            "carbs": r.carbs_per_100g,
+            "fat": r.fat_per_100g,
+            "fiber": r.fiber_g
+        } for r in results]
+    }
 
 @router.get("/barcode/{barcode}")
 def get_food_by_barcode(
     barcode: str, 
     current_user: User = Depends(get_current_user)
 ):
+    from app.services.food_search_service import FoodSearchService
+    food_search = FoodSearchService()
     result = food_search.get_product_by_barcode(barcode)
     if not result:
         raise HTTPException(status_code=404, detail="Product not found")
     return result
-
-@router.post("/add")
-def add_food_item(
-    data: FoodItemCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Only admin can add food items
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admins only")
-    
-    # Create new food item
-    food = FoodItem(
-        id=uuid.uuid4(),
-        name=data.name,
-        category=data.category,
-        calories_per_100g=data.calories_per_100g,
-        protein_per_100g=data.protein_per_100g,
-        carbs_per_100g=data.carbs_per_100g,
-        fats_per_100g=data.fats_per_100g,
-        fiber_per_100g=data.fiber_per_100g
-    )
-    
-    db.add(food)
-    db.commit()
-    db.refresh(food)
-    
-    return {
-        "success": True,
-        "message": f"Food item '{food.name}' added successfully",
-        "food": food
-    }

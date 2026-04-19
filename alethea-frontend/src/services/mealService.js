@@ -15,7 +15,7 @@ export const deleteMeal = async (mealId) => {
     return response.data
 }
 
-export const searchFood = async (query) => {
+export const searchLocalFood = async (query) => {
     const response = await API.get(`/food/search?query=${encodeURIComponent(query)}`)
     return response.data
 }

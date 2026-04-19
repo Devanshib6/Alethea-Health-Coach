@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, date
+from datetime import datetime
 import uuid
 
 class MealCreate(BaseModel):
@@ -24,7 +24,7 @@ class MealResponse(BaseModel):
     fat: Optional[float] = None
     quantity: Optional[float] = None
     unit: Optional[str] = None
-    date: Optional[date] = None
+    date: Optional[str] = None  # Changed to Optional[str] to accept string dates
     created_at: datetime
 
     class Config:

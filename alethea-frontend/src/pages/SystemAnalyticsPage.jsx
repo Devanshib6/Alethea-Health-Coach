@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
+import API from '../services/authService'
+
+const c = {
+  dark: '#1a0405',
+  taupe: '#7a6058',
+  peach: '#d4a090',
+  white: '#ffffff',
+}
 
 const SystemAnalyticsPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -20,209 +27,285 @@ const SystemAnalyticsPage = () => {
 
   const fetchData = async () => {
     try {
-      const response = await api.get('/admin/users')
-      setUsers(response.data)
-    } catch (error) {
-      console.error('Failed to fetch data:', error)
+      const [statsRes, usersRes] = await Promise.all([
+        API.get('/admin/stats'),
+        API.get('/admin/users')
+      ])
+      setStats(statsRes.data)
+      setUsers(usersRes.data)
+    } catch (err) {
+      console.error('Error fetching analytics:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Analytics Data
-  const goalDistribution = {}
-  const dietDistribution = {}
-  const genderDistribution = {}
-  const activityDistribution = {}
+  const getGoalLabel = (goal) => {
+    if (!goal) return 'Not Set'
+    const labels = {
+      'lose_weight': 'Lose Weight',
+      'gain_muscle': 'Gain Muscle',
+      'maintain': 'Maintain',
+      'improve_health': 'Improve Health',
+      'not set': 'Not Set'
+    }
+    return labels[goal] || goal.replace(/_/g, ' ')
+  }
 
-  users.forEach(u => {
-    const goal = u.goal || 'not set'
-    goalDistribution[goal] = (goalDistribution[goal] || 0) + 1
+  const getDietLabel = (diet) => {
+    if (!diet) return 'Not Set'
+    const labels = {
+      'Veg': '🥗 Vegetarian',
+      'Eggitarian': '🥚 Eggitarian',
+      'Non-Veg': '🍗 Non-Veg',
+      'not set': 'Not Set'
+    }
+    return labels[diet] || diet
+  }
 
-    const diet = u.diet_type || 'not set'
-    dietDistribution[diet] = (dietDistribution[diet] || 0) + 1
+  const getGenderLabel = (gender) => {
+    if (!gender) return 'Not Set'
+    return gender.charAt(0).toUpperCase() + gender.slice(1)
+  }
 
-    const gender = u.gender || 'not set'
-    genderDistribution[gender] = (genderDistribution[gender] || 0) + 1
+  const getActivityLabel = (activity) => {
+    if (!activity) return 'Not Set'
+    const labels = {
+      'sedentary': 'Sedentary',
+      'light': 'Light',
+      'moderate': 'Moderate',
+      'active': 'Active',
+      'very_active': 'Very Active',
+      'not set': 'Not Set'
+    }
+    return labels[activity] || activity
+  }
 
-    const activity = u.activity_level || 'not set'
-    activityDistribution[activity] = (activityDistribution[activity] || 0) + 1
-  })
+  const getGoalDistribution = () => {
+    const goals = {}
+    users.forEach(u => {
+      const goal = u.goal || 'not set'
+      goals[goal] = (goals[goal] || 0) + 1
+    })
+    return Object.entries(goals).map(([goal, count]) => ({ goal, count }))
+  }
 
-  const goalData = Object.entries(goalDistribution).map(([name, value]) => ({ name: name.replace('_', ' '), value }))
-  const dietData = Object.entries(dietDistribution).map(([name, value]) => ({ name: name.replace('_', ' '), value }))
-  const genderData = Object.entries(genderDistribution).map(([name, value]) => ({ name, value }))
-  const activityData = Object.entries(activityDistribution).map(([name, value]) => ({ name: name.replace('_', ' '), value }))
+  const getDietDistribution = () => {
+    const diets = {}
+    users.forEach(u => {
+      const diet = u.diet_type || 'not set'
+      diets[diet] = (diets[diet] || 0) + 1
+    })
+    return Object.entries(diets).map(([diet, count]) => ({ diet, count }))
+  }
 
-  const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444']
+  const getGenderDistribution = () => {
+    const genders = {}
+    users.forEach(u => {
+      const gender = u.gender || 'not set'
+      genders[gender] = (genders[gender] || 0) + 1
+    })
+    return Object.entries(genders).map(([gender, count]) => ({ gender, count }))
+  }
 
-  const weeklyData = [
-    { day: 'Mon', active: 145, new: 12 },
-    { day: 'Tue', active: 162, new: 8 },
-    { day: 'Wed', active: 178, new: 15 },
-    { day: 'Thu', active: 195, new: 10 },
-    { day: 'Fri', active: 210, new: 18 },
-    { day: 'Sat', active: 225, new: 22 },
-    { day: 'Sun', active: 240, new: 14 },
-  ]
+  const getActivityDistribution = () => {
+    const activities = {}
+    users.forEach(u => {
+      const activity = u.activity_level || 'not set'
+      activities[activity] = (activities[activity] || 0) + 1
+    })
+    return Object.entries(activities).map(([activity, count]) => ({ activity, count }))
+  }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading analytics...</div>
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c.white }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, border: `3px solid ${c.peach}`, borderTopColor: c.dark, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: c.taupe }}>Loading analytics...</p>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Admin Navbar */}
-      <nav className="bg-gradient-to-r from-indigo-900 to-purple-900 text-white px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-indigo-900 font-bold">A</span>
-            </div>
-            <span className="font-bold text-xl">Alethea Admin</span>
-          </div>
-          <div className="flex items-center space-x-6">
-            <Link to="/admin/dashboard" className="hover:text-indigo-300">Dashboard</Link>
-            <Link to="/admin/users" className="hover:text-indigo-300">Users</Link>
-            <Link to="/admin/food-database" className="hover:text-indigo-300">Food DB</Link>
-            <Link to="/admin/analytics" className="text-indigo-300">Analytics</Link>
-          </div>
+    <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
+
+      {/* Navigation Bar */}
+      <nav style={{ backgroundColor: c.dark, padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: c.white, fontWeight: 900, fontSize: 20, letterSpacing: 2 }}>ALETHEA</span>
+          <span style={{ backgroundColor: c.peach, color: c.dark, fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, textTransform: 'uppercase' }}>Admin</span>
+        </div>
+        <div style={{ display: 'flex', gap: 24 }}>
+          {[
+            { label: 'Dashboard', path: '/admin/dashboard' },
+            { label: 'Users', path: '/admin/users' },
+            { label: 'Food DB', path: '/admin/food-database' },
+            { label: 'Analytics', path: '/admin/analytics' },
+          ].map((item, i) => (
+            <Link key={i} to={item.path} style={{ color: i === 3 ? c.peach : c.taupe, textDecoration: 'none', fontSize: 13, letterSpacing: 1 }}>
+              {item.label}
+            </Link>
+          ))}
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">System Analytics</h1>
-          <p className="text-gray-600 mt-1">Platform usage statistics and insights</p>
+      {/* Main Content */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 40 }}>
+          <p style={{ color: c.peach, fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 8 }}>
+            Admin Panel
+          </p>
+          <h1 style={{ color: c.dark, fontSize: 32, fontWeight: 900, letterSpacing: -1, margin: 0 }}>System Analytics</h1>
+          <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>Overview of platform usage and user data</p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Overview Stats Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 40 }}>
           {[
-            { label: 'Total Users', value: users.length, icon: '👥', change: '+12%' },
-            { label: 'Active Users', value: users.filter(u => u.is_active).length, icon: '✅', change: '+8%' },
-            { label: 'Completion Rate', value: '68%', icon: '📊', change: '+5%' },
-            { label: 'Avg Health Score', value: '74', icon: '❤️', change: '+3%' },
+            { label: 'Total Users', value: stats?.total_users || 0, icon: '👥', color: c.dark },
+            { label: 'Active Users', value: stats?.active_users || 0, icon: '✅', color: '#22c55e' },
+            { label: 'Inactive', value: (stats?.total_users || 0) - (stats?.active_users || 0), icon: '⏸️', color: c.taupe },
+            { label: 'Admins', value: stats?.admin_users || 0, icon: '🔑', color: c.peach },
           ].map((stat, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{stat.icon}</span>
-                <span className="text-green-600 text-sm">{stat.change}</span>
-              </div>
-              <div className="text-3xl font-bold">{stat.value}</div>
-              <div className="text-gray-500 text-sm">{stat.label}</div>
+            <div key={i} style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 20, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>{stat.icon}</div>
+              <p style={{ color: c.taupe, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{stat.label}</p>
+              <p style={{ color: stat.color, fontSize: 36, fontWeight: 900, margin: '4px 0 0', lineHeight: 1 }}>{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, marginBottom: 32 }}>
+
           {/* Goal Distribution */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="font-semibold mb-4">🎯 User Goals Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={goalData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                  {goalData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24 }}>
+            <h3 style={{ color: c.dark, fontWeight: 800, fontSize: 16, marginBottom: 20 }}>🎯 Goal Distribution</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {getGoalDistribution().map((item, i) => {
+                const percentage = users.length ? (item.count / users.length) * 100 : 0
+                return (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ color: c.taupe, fontSize: 13, textTransform: 'capitalize' }}>{getGoalLabel(item.goal)}</span>
+                      <span style={{ color: c.dark, fontWeight: 700, fontSize: 13 }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: 6, backgroundColor: `${c.peach}30`, borderRadius: 3 }}>
+                      <div style={{ height: 6, backgroundColor: c.dark, borderRadius: 3, width: `${percentage}%`, transition: 'width 0.5s' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           {/* Diet Distribution */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="font-semibold mb-4">🥗 Diet Type Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={dietData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                  {dietData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Weekly Activity */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="font-semibold mb-4">📈 Weekly Active Users</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="active" stroke="#6366f1" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24 }}>
+            <h3 style={{ color: c.dark, fontWeight: 800, fontSize: 16, marginBottom: 20 }}>🥗 Diet Type Distribution</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {getDietDistribution().map((item, i) => {
+                const percentage = users.length ? (item.count / users.length) * 100 : 0
+                return (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ color: c.taupe, fontSize: 13 }}>{getDietLabel(item.diet)}</span>
+                      <span style={{ color: c.dark, fontWeight: 700, fontSize: 13 }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: 6, backgroundColor: `${c.peach}30`, borderRadius: 3 }}>
+                      <div style={{ height: 6, backgroundColor: c.taupe, borderRadius: 3, width: `${percentage}%`, transition: 'width 0.5s' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           {/* Gender Distribution */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="font-semibold mb-4">👤 Gender Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={genderData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#ec4899" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24 }}>
+            <h3 style={{ color: c.dark, fontWeight: 800, fontSize: 16, marginBottom: 20 }}>👤 Gender Distribution</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {getGenderDistribution().map((item, i) => {
+                const percentage = users.length ? (item.count / users.length) * 100 : 0
+                return (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ color: c.taupe, fontSize: 13, textTransform: 'capitalize' }}>{getGenderLabel(item.gender)}</span>
+                      <span style={{ color: c.dark, fontWeight: 700, fontSize: 13 }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: 6, backgroundColor: `${c.peach}30`, borderRadius: 3 }}>
+                      <div style={{ height: 6, backgroundColor: c.peach, borderRadius: 3, width: `${percentage}%`, transition: 'width 0.5s' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
-          {/* Activity Levels */}
-          <div className="bg-white rounded-xl shadow-md p-6 lg:col-span-2">
-            <h3 className="font-semibold mb-4">🏃 Activity Level Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={activityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#f59e0b" />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Activity Distribution */}
+          <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, padding: 24 }}>
+            <h3 style={{ color: c.dark, fontWeight: 800, fontSize: 16, marginBottom: 20 }}>🏃 Activity Level Distribution</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {getActivityDistribution().map((item, i) => {
+                const percentage = users.length ? (item.count / users.length) * 100 : 0
+                return (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ color: c.taupe, fontSize: 13, textTransform: 'capitalize' }}>{getActivityLabel(item.activity)}</span>
+                      <span style={{ color: c.dark, fontWeight: 700, fontSize: 13 }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: 6, backgroundColor: `${c.peach}30`, borderRadius: 3 }}>
+                      <div style={{ height: 6, backgroundColor: '#b45309', borderRadius: 3, width: `${percentage}%`, transition: 'width 0.5s' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
 
-        {/* User Insights Table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b">
-            <h3 className="font-semibold">User Insights</h3>
+        {/* Recent Users Table */}
+        <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 24px', borderBottom: `1px solid ${c.peach}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: `${c.peach}10` }}>
+            <h3 style={{ color: c.dark, fontWeight: 800, margin: 0, fontSize: 16 }}>📋 Recent Users</h3>
+            <Link to="/admin/users" style={{ color: c.peach, fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>View All →</Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Insight</th>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ backgroundColor: `${c.peach}10` }}>
+                  <th style={{ padding: '12px 16px', color: c.taupe, textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Name</th>
+                  <th style={{ padding: '12px 16px', color: c.taupe, textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Email</th>
+                  <th style={{ padding: '12px 16px', color: c.taupe, textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Goal</th>
+                  <th style={{ padding: '12px 16px', color: c.taupe, textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Diet Type</th>
+                  <th style={{ padding: '12px 16px', color: c.taupe, textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
-                <tr>
-                  <td className="px-6 py-4">Average Age</td>
-                  <td className="px-6 py-4 font-medium">32 years</td>
-                  <td className="px-6 py-4 text-gray-500">Young adult demographic</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4">Most Popular Goal</td>
-                  <td className="px-6 py-4 font-medium capitalize">{Object.entries(goalDistribution).sort((a,b) => b[1] - a[1])[0]?.[0] || '-'}</td>
-                  <td className="px-6 py-4 text-gray-500">Primary user motivation</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4">Most Common Diet</td>
-                  <td className="px-6 py-4 font-medium capitalize">{Object.entries(dietDistribution).sort((a,b) => b[1] - a[1])[0]?.[0] || '-'}</td>
-                  <td className="px-6 py-4 text-gray-500">Popular dietary preference</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4">User Retention</td>
-                  <td className="px-6 py-4 font-medium">78%</td>
-                  <td className="px-6 py-4 text-gray-500">30-day retention rate</td>
-                </tr>
+              <tbody>
+                {users.slice(0, 8).map((u, i) => (
+                  <tr key={u.id} style={{ borderTop: `1px solid ${c.peach}20`, backgroundColor: i % 2 === 0 ? c.white : `${c.peach}05` }}>
+                    <td style={{ padding: '12px 16px', color: c.dark, fontWeight: 600 }}>{u.full_name || '-'}</td>
+                    <td style={{ padding: '12px 16px', color: c.taupe }}>{u.email || '-'}</td>
+                    <td style={{ padding: '12px 16px', color: c.taupe, textTransform: 'capitalize' }}>{getGoalLabel(u.goal)}</td>
+                    <td style={{ padding: '12px 16px', color: c.taupe }}>{getDietLabel(u.diet_type)}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ 
+                        backgroundColor: u.is_active ? '#d4edda' : '#fde8e8', 
+                        color: u.is_active ? '#155724' : '#b91c1c', 
+                        padding: '3px 10px', 
+                        borderRadius: 20, 
+                        fontSize: 11, 
+                        fontWeight: 600 
+                      }}>
+                        {u.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

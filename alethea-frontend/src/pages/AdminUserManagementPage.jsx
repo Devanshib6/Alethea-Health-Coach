@@ -1,16 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
-import toast from 'react-hot-toast'
+import API from '../services/authService'
+
+const c = {
+  dark: '#1a0405',
+  taupe: '#7a6058',
+  peach: '#d4a090',
+  white: '#ffffff',
+}
 
 const AdminUserManagementPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [users, setUsers] = useState([])
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [showDeleteModal, setShowDeleteModal] = useState(null)
+  const [search, setSearch] = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -22,134 +30,239 @@ const AdminUserManagementPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/admin/users')
+      const response = await API.get('/admin/users')
       setUsers(response.data)
-    } catch (error) {
-      console.error('Failed to fetch users:', error)
+    } catch (err) {
+      console.error('Error fetching users:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDeleteUser = async (userId) => {
+  const handleDelete = async () => {
+    if (!selectedUser) return
+    setDeleting(true)
     try {
-      await api.delete(`/admin/users/${userId}`)
-      setUsers(users.filter(u => u.id !== userId))
-      toast.success('User deleted successfully')
-      setShowDeleteModal(null)
-    } catch (error) {
-      toast.error('Failed to delete user')
+      await API.delete(`/admin/users/${selectedUser.id}`)
+      // Remove user from list
+      setUsers(users.filter(u => u.id !== selectedUser.id))
+      setShowDeleteModal(false)
+      setSelectedUser(null)
+      alert('User deleted successfully!')
+    } catch (err) {
+      console.error('Error deleting user:', err)
+      alert(err.response?.data?.detail || 'Failed to delete user')
+    } finally {
+      setDeleting(false)
     }
   }
 
-  const filteredUsers = users.filter(u => 
+  const filteredUsers = users.filter(u =>
     u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
   )
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c.white }}>
+        <p style={{ color: c.taupe }}>Loading users...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Admin Navbar */}
-      <nav className="bg-gradient-to-r from-indigo-900 to-purple-900 text-white px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-indigo-900 font-bold">A</span>
-            </div>
-            <span className="font-bold text-xl">Alethea Admin</span>
-          </div>
-          <div className="flex items-center space-x-6">
-            <Link to="/admin/dashboard" className="hover:text-indigo-300">Dashboard</Link>
-            <Link to="/admin/users" className="text-indigo-300">Users</Link>
-            <Link to="/admin/food-database" className="hover:text-indigo-300">Food DB</Link>
-            <Link to="/admin/analytics" className="hover:text-indigo-300">Analytics</Link>
-          </div>
+    <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
+
+      {/* Navigation Bar */}
+      <nav style={{ backgroundColor: c.dark, padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: c.white, fontWeight: 900, fontSize: 20, letterSpacing: 2 }}>ALETHEA</span>
+          <span style={{ backgroundColor: c.peach, color: c.dark, fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, textTransform: 'uppercase' }}>Admin</span>
+        </div>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+          {[
+            { label: 'Dashboard', path: '/admin/dashboard' },
+            { label: 'Users', path: '/admin/users' },
+            { label: 'Food DB', path: '/admin/food-database' },
+            { label: 'Analytics', path: '/admin/analytics' },
+          ].map((item, i) => (
+            <Link key={i} to={item.path} style={{ color: i === 1 ? c.peach : c.taupe, textDecoration: 'none', fontSize: 13, letterSpacing: 1 }}>
+              {item.label}
+            </Link>
+          ))}
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-8">
+      {/* Main Content */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-gray-600 mt-1">Manage all registered users</p>
+            <p style={{ color: c.peach, fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 8 }}>
+              Admin Panel
+            </p>
+            <h1 style={{ color: c.dark, fontSize: 32, fontWeight: 900, letterSpacing: -1, margin: 0 }}>User Management</h1>
+            <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>{users.length} total users registered</p>
           </div>
           <input
             type="text"
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 border rounded-lg w-64"
+            style={{ border: `1.5px solid ${c.peach}`, borderRadius: 8, padding: '10px 16px', fontSize: 14, outline: 'none', width: 260 }}
           />
         </div>
 
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+        {/* Users Table */}
+        <div style={{ border: `1px solid ${c.peach}`, borderRadius: 12, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ backgroundColor: c.dark }}>
+                <th style={{ padding: '14px 16px', color: c.white, textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>User</th>
+                <th style={{ padding: '14px 16px', color: c.peach, textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Email</th>
+                <th style={{ padding: '14px 16px', color: c.peach, textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Role</th>
+                <th style={{ padding: '14px 16px', color: c.peach, textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Status</th>
+                <th style={{ padding: '14px 16px', color: c.peach, textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Joined</th>
+                <th style={{ padding: '14px 16px', color: c.peach, textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
-              {filteredUsers.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <span className="text-indigo-600 font-semibold">{u.full_name?.charAt(0)}</span>
-                      </div>
-                      <span className="font-medium">{u.full_name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{u.email}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {u.role || 'user'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {u.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 text-sm">
-                    {new Date(u.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    {u.id !== user?.id && (
-                      <button
-                        onClick={() => setShowDeleteModal(u)}
-                        className="text-red-500 hover:text-red-700 text-sm"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
+            <tbody>
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: c.taupe }}>No users found</td>
                 </tr>
-              ))}
+              ) : (
+                filteredUsers.map((u, i) => (
+                  <tr key={u.id} style={{ borderTop: `1px solid ${c.peach}20`, backgroundColor: i % 2 === 0 ? c.white : `${c.peach}05` }}>
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: c.dark, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ color: c.peach, fontSize: 12, fontWeight: 700 }}>{u.full_name?.charAt(0) || 'U'}</span>
+                        </div>
+                        <span style={{ color: c.dark, fontWeight: 600 }}>{u.full_name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px', color: c.taupe }}>{u.email}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{ 
+                        backgroundColor: u.role === 'admin' ? c.dark : `${c.peach}20`, 
+                        color: u.role === 'admin' ? c.white : c.dark, 
+                        padding: '3px 10px', 
+                        borderRadius: 20, 
+                        fontSize: 11, 
+                        fontWeight: 600, 
+                        textTransform: 'uppercase' 
+                      }}>
+                        {u.role || 'user'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{ 
+                        backgroundColor: u.is_active ? '#d4edda' : '#fde8e8', 
+                        color: u.is_active ? '#155724' : '#b91c1c', 
+                        padding: '3px 10px', 
+                        borderRadius: 20, 
+                        fontSize: 11, 
+                        fontWeight: 600 
+                      }}>
+                        {u.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', color: c.taupe }}>{formatDate(u.created_at)}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {u.id !== user?.id && (
+                        <button 
+                          onClick={() => { setSelectedUser(u); setShowDeleteModal(true) }}
+                          style={{ 
+                            backgroundColor: 'transparent', 
+                            border: `1px solid ${c.peach}`, 
+                            color: '#ef4444', 
+                            padding: '6px 12px', 
+                            fontSize: 12, 
+                            cursor: 'pointer', 
+                            borderRadius: 4,
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor = '#ef4444'
+                            e.currentTarget.style.color = c.white
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor = 'transparent'
+                            e.currentTarget.style.color = '#ef4444'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Delete Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-2">Delete User</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete <strong>{showDeleteModal.full_name}</strong>? This action cannot be undone.
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.5)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          zIndex: 1000 
+        }}>
+          <div style={{ backgroundColor: c.white, borderRadius: 12, padding: 32, maxWidth: 400, width: '90%' }}>
+            <h3 style={{ color: c.dark, marginBottom: 12, fontWeight: 800 }}>Delete User?</h3>
+            <p style={{ color: c.taupe, marginBottom: 24, fontSize: 14, lineHeight: 1.6 }}>
+              Are you sure you want to delete <strong>{selectedUser?.full_name}</strong>? This will permanently remove their account and all data.
             </p>
-            <div className="flex gap-4">
-              <button onClick={() => setShowDeleteModal(null)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => setShowDeleteModal(false)}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px', 
+                  backgroundColor: 'transparent', 
+                  border: `1.5px solid ${c.peach}`, 
+                  borderRadius: 8, 
+                  cursor: 'pointer', 
+                  color: c.taupe,
+                  fontWeight: 600,
+                  fontSize: 14
+                }}
+              >
                 Cancel
               </button>
-              <button onClick={() => handleDeleteUser(showDeleteModal.id)} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-                Delete
+              <button 
+                onClick={handleDelete} 
+                disabled={deleting}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px', 
+                  backgroundColor: '#ef4444', 
+                  color: c.white, 
+                  border: 'none', 
+                  borderRadius: 8, 
+                  cursor: deleting ? 'not-allowed' : 'pointer', 
+                  fontWeight: 700,
+                  fontSize: 14,
+                  opacity: deleting ? 0.6 : 1
+                }}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

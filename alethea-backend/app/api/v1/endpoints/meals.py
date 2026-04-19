@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 from app.core.database import get_db
 from app.models.meal import Meal
 from app.schemas.meal import MealCreate, MealResponse
@@ -28,11 +29,46 @@ def log_meal(meal_data: MealCreate, db: Session = Depends(get_db), current_user:
     db.add(meal)
     db.commit()
     db.refresh(meal)
-    return meal
+    
+    # Convert date to string for response
+    response_data = MealResponse(
+        id=meal.id,
+        user_id=meal.user_id,
+        food_name=meal.food_name,
+        meal_type=meal.meal_type,
+        calories=meal.calories,
+        protein=meal.protein,
+        carbs=meal.carbs,
+        fat=meal.fat,
+        quantity=meal.quantity,
+        unit=meal.unit,
+        date=str(meal.date) if meal.date else None,
+        created_at=meal.created_at
+    )
+    return response_data
 
-@router.get("/")
+@router.get("/", response_model=List[MealResponse])
 def get_meals(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Meal).filter(Meal.user_id == current_user.id).order_by(Meal.created_at.desc()).all()
+    meals = db.query(Meal).filter(Meal.user_id == current_user.id).order_by(Meal.created_at.desc()).all()
+    
+    # Convert date to string for each meal
+    response_data = []
+    for meal in meals:
+        response_data.append(MealResponse(
+            id=meal.id,
+            user_id=meal.user_id,
+            food_name=meal.food_name,
+            meal_type=meal.meal_type,
+            calories=meal.calories,
+            protein=meal.protein,
+            carbs=meal.carbs,
+            fat=meal.fat,
+            quantity=meal.quantity,
+            unit=meal.unit,
+            date=str(meal.date) if meal.date else None,
+            created_at=meal.created_at
+        ))
+    return response_data
 
 @router.delete("/{meal_id}")
 def delete_meal(meal_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

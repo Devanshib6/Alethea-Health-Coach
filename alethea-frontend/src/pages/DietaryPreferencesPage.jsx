@@ -1,102 +1,217 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { updateProfile } from '../services/authService'
-import toast from 'react-hot-toast'
+import { updateProfile, getMyProfile } from '../services/authService'
+
+const c = {
+    dark: '#1a0405',
+    taupe: '#7a6058',
+    peach: '#d4a090',
+    white: '#ffffff',
+}
 
 const DietaryPreferencesPage = () => {
-  const navigate = useNavigate()
-  const { user, login } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    diet_type: user?.diet_type || '',
-    allergies: user?.allergies || '',
-  })
+    const navigate = useNavigate()
+    const { user, updateUser } = useAuth()
+    const [loading, setLoading] = useState(false)
+    const [formData, setFormData] = useState({
+        diet_type: '',
+        allergies: '',
+    })
 
-  const dietTypes = [
-    { value: 'balanced', label: 'Balanced', icon: '🥗', desc: 'All foods in moderation' },
-    { value: 'vegetarian', label: 'Vegetarian', icon: '🥦', desc: 'No meat, includes dairy & eggs' },
-    { value: 'vegan', label: 'Vegan', icon: '🌱', desc: 'No animal products' },
-    { value: 'keto', label: 'Keto', icon: '🥩', desc: 'Low carb, high fat' },
-    { value: 'paleo', label: 'Paleo', icon: '🍖', desc: 'Whole foods only' },
-    { value: 'mediterranean', label: 'Mediterranean', icon: '🫒', desc: 'Heart-healthy diet' },
-  ]
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                diet_type: user.diet_type || '',
+                allergies: user.allergies || '',
+            })
+        }
+    }, [user])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const updatedUser = await updateProfile(formData)
-      login(localStorage.getItem('token'), { ...user, ...updatedUser })
-      toast.success('Preferences saved!')
-      // Redirect to dashboard after completing profile
-      navigate('/dashboard')
-    } catch (error) {
-      toast.error('Failed to save')
-    } finally {
-      setLoading(false)
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
     }
-  }
 
-  const handleBack = () => {
-    navigate('/goals-health')
-  }
+    const handleDietSelect = (dietType) => {
+        setFormData({ ...formData, diet_type: dietType })
+    }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12 px-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">🥗</span>
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setLoading(true)
+
+        try {
+            await updateProfile({
+                diet_type: formData.diet_type,
+                allergies: formData.allergies || null,
+            })
+            
+            const freshUser = await getMyProfile()
+            updateUser(freshUser)
+            
+            navigate('/dashboard')
+        } catch (error) {
+            console.error('Failed to save dietary preferences:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSkip = () => {
+        navigate('/dashboard')
+    }
+
+    const dietOptions = [
+        { 
+            value: 'veg', 
+            label: 'Vegetarian', 
+            icon: '🥗',
+            description: 'No meat, fish, or eggs. Includes dairy and plant-based foods.'
+        },
+        { 
+            value: 'non-veg', 
+            label: 'Non-Vegetarian', 
+            icon: '🍗',
+            description: 'Includes meat, fish, eggs, and all other foods.'
+        },
+        { 
+            value: 'eggitarian', 
+            label: 'Eggitarian', 
+            icon: '🥚',
+            description: 'No meat or fish, but includes eggs and dairy products.'
+        },
+    ]
+
+    return (
+        <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
+            <div style={{ backgroundColor: c.dark, padding: '20px 32px' }}>
+                <div style={{ maxWidth: 800, margin: '0 auto' }}>
+                    <h1 style={{ color: c.white, fontSize: 28, fontWeight: 800, margin: 0 }}>Dietary Preferences</h1>
+                    <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>Tell us about your eating habits</p>
+                </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800">Dietary Preferences</h1>
-            <p className="text-gray-500 mt-2">Tell us about your eating habits</p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Diet Type</label>
-              <div className="grid grid-cols-2 gap-3">
-                {dietTypes.map((diet) => (
-                  <div
-                    key={diet.value}
-                    onClick={() => setFormData({ ...formData, diet_type: diet.value })}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.diet_type === diet.value ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}`}
-                  >
-                    <div className="text-2xl mb-2">{diet.icon}</div>
-                    <div className="font-semibold text-gray-800">{diet.label}</div>
-                    <div className="text-xs text-gray-500">{diet.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 32px' }}>
+                <form onSubmit={handleSubmit}>
+                    {/* Diet Type Selection */}
+                    <div style={{ marginBottom: 32 }}>
+                        <h3 style={{ color: c.dark, fontWeight: 800, marginBottom: 16, fontSize: 18 }}>Diet Type</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                            {dietOptions.map((option) => (
+                                <div
+                                    key={option.value}
+                                    onClick={() => handleDietSelect(option.value)}
+                                    style={{
+                                        border: formData.diet_type === option.value 
+                                            ? `2px solid ${c.peach}` 
+                                            : `1.5px solid ${c.taupe}30`,
+                                        borderRadius: 12,
+                                        padding: 20,
+                                        cursor: 'pointer',
+                                        backgroundColor: formData.diet_type === option.value 
+                                            ? `${c.peach}10` 
+                                            : c.white,
+                                        transition: 'all 0.2s',
+                                        textAlign: 'center'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = c.peach}
+                                    onMouseLeave={e => {
+                                        if (formData.diet_type !== option.value) {
+                                            e.currentTarget.style.borderColor = `${c.taupe}30`
+                                        }
+                                    }}
+                                >
+                                    <div style={{ fontSize: 40, marginBottom: 12 }}>{option.icon}</div>
+                                    <h4 style={{ color: c.dark, fontWeight: 700, marginBottom: 8, fontSize: 16 }}>
+                                        {option.label}
+                                    </h4>
+                                    <p style={{ color: c.taupe, fontSize: 12, lineHeight: 1.5, margin: 0 }}>
+                                        {option.description}
+                                    </p>
+                                    {formData.diet_type === option.value && (
+                                        <div style={{ 
+                                            marginTop: 12, 
+                                            color: c.peach, 
+                                            fontSize: 20,
+                                            fontWeight: 600
+                                        }}>
+                                            ✓ Selected
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Allergies / Intolerances</label>
-              <input
-                type="text"
-                value={formData.allergies}
-                onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                placeholder="e.g., nuts, dairy, gluten, shellfish"
-              />
-              <p className="text-xs text-gray-400 mt-1">Separate multiple items with commas</p>
-            </div>
+                    {/* Allergies */}
+                    <div style={{ marginBottom: 32 }}>
+                        <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, marginBottom: 8 }}>
+                            Allergies / Intolerances
+                        </label>
+                        <input
+                            type="text"
+                            name="allergies"
+                            value={formData.allergies}
+                            onChange={handleChange}
+                            placeholder="e.g., nuts, dairy, gluten, shellfish"
+                            style={{ 
+                                width: '100%', 
+                                border: 'none', 
+                                borderBottom: `2px solid ${c.dark}`, 
+                                padding: '12px 0', 
+                                fontSize: 15, 
+                                outline: 'none', 
+                                backgroundColor: 'transparent',
+                                fontFamily: 'sans-serif'
+                            }}
+                        />
+                        <p style={{ color: c.taupe, fontSize: 12, marginTop: 6 }}>
+                            Separate multiple items with commas
+                        </p>
+                    </div>
 
-            <div className="flex gap-4 pt-4">
-              <button type="button" onClick={handleBack} className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">
-                Back
-              </button>
-              <button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50">
-                {loading ? 'Saving...' : 'Complete Setup →'}
-              </button>
+                    {/* Navigation Buttons */}
+                    <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
+                        <button
+                            type="button"
+                            onClick={handleSkip}
+                            style={{ 
+                                flex: 1, 
+                                backgroundColor: 'transparent', 
+                                border: `1.5px solid ${c.peach}`, 
+                                color: c.taupe, 
+                                padding: '14px', 
+                                fontSize: 14, 
+                                cursor: 'pointer',
+                                borderRadius: 8,
+                                fontWeight: 600
+                            }}
+                        >
+                            Skip
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !formData.diet_type}
+                            style={{ 
+                                flex: 1, 
+                                backgroundColor: c.dark, 
+                                color: c.white, 
+                                border: 'none', 
+                                padding: '14px', 
+                                fontSize: 14, 
+                                fontWeight: 700, 
+                                cursor: (loading || !formData.diet_type) ? 'not-allowed' : 'pointer', 
+                                opacity: (loading || !formData.diet_type) ? 0.6 : 1,
+                                borderRadius: 8
+                            }}
+                        >
+                            {loading ? 'Saving...' : 'Complete Setup →'}
+                        </button>
+                    </div>
+                </form>
             </div>
-          </form>
         </div>
-      </div>
-    </div>
-  )
+    )
 }
 
 export default DietaryPreferencesPage
