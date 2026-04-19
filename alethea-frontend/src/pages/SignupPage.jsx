@@ -1,85 +1,131 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { registerUser } from '../services/authService'
-import toast from 'react-hot-toast'
+
+const c = {
+  dark: '#1a0405',
+  taupe: '#7a6058',
+  peach: '#d4a090',
+  white: '#ffffff',
+}
 
 const SignupPage = () => {
   const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
+    role: 'user',  // Default role is 'user'
   })
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+    setError('')
+
     // Validation
     if (!formData.full_name.trim()) {
-      toast.error('Please enter your full name')
+      setError('Full name is required')
       return
     }
-    
+
     if (!formData.email.trim()) {
-      toast.error('Please enter your email')
+      setError('Email is required')
       return
     }
-    
-    if (formData.password !== formData.confirm_password) {
-      toast.error('Passwords do not match')
-      return
-    }
-    
+
     if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+      setError('Password must be at least 6 characters')
       return
     }
-    
+
+    if (formData.password !== formData.confirm_password) {
+      setError('Passwords do not match')
+      return
+    }
+
     setLoading(true)
-    
     try {
-      // Register user
-      await registerUser(formData.full_name, formData.email, formData.password)
-      
-      toast.success('Account created successfully! Please login.')
-      
-      // Redirect to login page after successful signup
-      navigate('/login')
-      
-    } catch (error) {
-      console.error('Signup error:', error)
-      toast.error(error.response?.data?.detail || 'Registration failed. Please try again.')
+      // Pass role to backend
+      await registerUser(formData.full_name, formData.email, formData.password, formData.role)
+      navigate('/login', { state: { message: 'Account created successfully! Please login.' } })
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">A</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800">Create Account</h1>
-          <p className="text-gray-500 mt-2">Start your health journey today</p>
-        </div>
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Georgia', serif" }}>
 
-        {/* Signup Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Full Name Field */}
+      {/* Left Panel - Info */}
+      <div style={{ flex: 1, backgroundColor: c.dark, padding: '60px 64px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="hidden md:flex">
+        <Link to="/" style={{ color: c.white, fontWeight: 900, fontSize: 22, letterSpacing: 3, textTransform: 'uppercase', textDecoration: 'none' }}>
+          Alethea
+        </Link>
+        <div>
+          <p style={{ color: c.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 20 }}>
+            — Join Alethea
+          </p>
+          <h2 style={{ color: c.white, fontSize: 'clamp(2.5rem, 4vw, 4rem)', fontWeight: 900, lineHeight: 1, letterSpacing: -2, marginBottom: 24 }}>
+            START YOUR<br />HEALTH<br />JOURNEY.
+          </h2>
+          <p style={{ color: c.taupe, fontSize: 15, lineHeight: 1.9, fontFamily: 'sans-serif', maxWidth: 340 }}>
+            Create your free account and get access to AI-powered meal tracking, personalized diet plans, and health predictions.
+          </p>
+
+          <div style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {[
+              'Free forever — no credit card needed',
+              'AI-powered personalized diet plans',
+              'Health predictions based on your data',
+              'Track meals and get nutrition insights'
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c.peach, flexShrink: 0 }} />
+                <p style={{ color: c.taupe, fontSize: 14, fontFamily: 'sans-serif' }}>{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p style={{ color: c.taupe, fontSize: 12, fontFamily: 'sans-serif', letterSpacing: 1 }}>© 2024 Alethea Health Coach</p>
+      </div>
+
+      {/* Right Panel - Signup Form */}
+      <div style={{ flex: 1, backgroundColor: c.white, padding: '60px 64px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflowY: 'auto' }}>
+
+        <Link to="/" style={{ color: c.dark, fontWeight: 900, fontSize: 20, letterSpacing: 3, textTransform: 'uppercase', textDecoration: 'none', marginBottom: 48, display: 'block' }} className="md:hidden">
+          Alethea
+        </Link>
+
+        <p style={{ color: c.peach, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 16 }}>
+          New Account
+        </p>
+        <h1 style={{ color: c.dark, fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 900, letterSpacing: -1, marginBottom: 8 }}>
+          Create Account
+        </h1>
+        <p style={{ color: c.taupe, fontSize: 14, fontFamily: 'sans-serif', marginBottom: 48 }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: c.dark, fontWeight: 700, textDecoration: 'underline' }}>Sign in here</Link>
+        </p>
+
+        {error && (
+          <div style={{ backgroundColor: '#fde8e8', border: '1px solid #f5c6c6', color: '#b91c1c', padding: '12px 16px', fontSize: 14, fontFamily: 'sans-serif', marginBottom: 24, borderRadius: 8 }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 400 }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
               Full Name
             </label>
             <input
@@ -88,14 +134,13 @@ const SignupPage = () => {
               value={formData.full_name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
               placeholder="John Doe"
+              style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', boxSizing: 'border-box' }}
             />
           </div>
 
-          {/* Email Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
               Email Address
             </label>
             <input
@@ -104,14 +149,33 @@ const SignupPage = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
               placeholder="you@example.com"
+              style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', boxSizing: 'border-box' }}
             />
           </div>
 
-          {/* Password Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
+              Account Type (Role)
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}
+            >
+              <option value="user">👤 Regular User - Track meals, get diet plans</option>
+              <option value="admin">👑 Admin User - Manage users, food database, analytics</option>
+            </select>
+            <p style={{ color: c.taupe, fontSize: 11, marginTop: 6, fontFamily: 'sans-serif' }}>
+              {formData.role === 'admin' 
+                ? '⚠️ Admin accounts have full access to user management and system settings.' 
+                : 'Regular users can track meals, get diet plans, and monitor health.'}
+            </p>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
               Password
             </label>
             <input
@@ -120,14 +184,13 @@ const SignupPage = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
               placeholder="Min. 6 characters"
+              style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', boxSizing: 'border-box' }}
             />
           </div>
 
-          {/* Confirm Password Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, fontFamily: 'sans-serif', marginBottom: 8 }}>
               Confirm Password
             </label>
             <input
@@ -136,36 +199,25 @@ const SignupPage = () => {
               value={formData.confirm_password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
               placeholder="Re-enter password"
+              style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '12px 0', fontSize: 15, fontFamily: 'sans-serif', color: c.dark, outline: 'none', backgroundColor: 'transparent', boxSizing: 'border-box' }}
             />
           </div>
 
-          {/* Terms Agreement */}
-          <p className="text-xs text-gray-500 text-center">
-            By creating an account, you agree to our{' '}
-            <span className="text-indigo-600 cursor-pointer hover:underline">Terms of Service</span>{' '}
+          <p style={{ color: c.taupe, fontSize: 12, fontFamily: 'sans-serif', lineHeight: 1.7 }}>
+            By creating an account you agree to our{' '}
+            <span style={{ color: c.dark, textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</span>{' '}
             and{' '}
-            <span className="text-indigo-600 cursor-pointer hover:underline">Privacy Policy</span>
+            <span style={{ color: c.dark, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</span>.
           </p>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+            style={{ backgroundColor: c.dark, color: c.white, padding: '16px', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'sans-serif', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, marginTop: 8, borderRadius: 4 }}>
             {loading ? 'Creating Account...' : 'Create Account →'}
           </button>
         </form>
-
-        {/* Login Link */}
-        <p className="text-center mt-6 text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">
-            Sign In
-          </Link>
-        </p>
       </div>
     </div>
   )

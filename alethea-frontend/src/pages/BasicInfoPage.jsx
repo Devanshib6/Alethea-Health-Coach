@@ -1,129 +1,179 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { updateProfile } from '../services/authService'
-import toast from 'react-hot-toast'
+import { updateProfile, getMyProfile } from '../services/authService'
+
+const c = {
+    dark: '#1a0405',
+    taupe: '#7a6058',
+    peach: '#d4a090',
+    white: '#ffffff',
+}
 
 const BasicInfoPage = () => {
-  const navigate = useNavigate()
-  const { user, login } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    full_name: user?.full_name || '',
-    age: user?.age || '',
-    gender: user?.gender || '',
-    height: user?.height || '',
-    weight: user?.weight || '',
-  })
+    const navigate = useNavigate()
+    const { user, login, updateUser } = useAuth()
+    const [loading, setLoading] = useState(false)
+    const [formData, setFormData] = useState({
+        full_name: '',
+        age: '',
+        gender: '',
+        height: '',
+        weight: '',
+    })
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const updatedUser = await updateProfile(formData)
-      login(localStorage.getItem('token'), { ...user, ...updatedUser })
-      toast.success('Basic info saved!')
-      // Redirect to goals page
-      navigate('/goals-health')
-    } catch (error) {
-      toast.error('Failed to save')
-    } finally {
-      setLoading(false)
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                full_name: user.full_name || '',
+                age: user.age || '',
+                gender: user.gender || '',
+                height: user.height || '',
+                weight: user.weight || '',
+            })
+        }
+    }, [user])
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
     }
-  }
 
-  const handleSkip = () => {
-    // Skip to dashboard
-    navigate('/dashboard')
-  }
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setLoading(true)
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 py-12 px-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">📝</span>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800">Basic Information</h1>
-            <p className="text-gray-500 mt-2">Let's get to know you better</p>
-          </div>
+        try {
+            const updatedUser = await updateProfile({
+                full_name: formData.full_name,
+                age: formData.age ? parseInt(formData.age) : null,
+                gender: formData.gender || null,
+                height: formData.height ? parseFloat(formData.height) : null,
+                weight: formData.weight ? parseFloat(formData.weight) : null,
+            })
+            
+            // Refresh user data
+            const freshUser = await getMyProfile()
+            updateUser(freshUser)
+            
+            // Redirect to goals page
+            navigate('/goals-health')
+        } catch (error) {
+            console.error('Failed to save:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-              <input
-                type="text"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                placeholder="John Doe"
-              />
-            </div>
+    const handleSkip = () => {
+        navigate('/dashboard')
+    }
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-                <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                  placeholder="25"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                >
-                  <option value="">Select</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
+    return (
+        <div style={{ minHeight: '100vh', backgroundColor: c.white, fontFamily: 'sans-serif' }}>
+            <div style={{ backgroundColor: c.dark, padding: '20px 32px' }}>
+                <div style={{ maxWidth: 600, margin: '0 auto' }}>
+                    <h1 style={{ color: c.white, fontSize: 28, fontWeight: 800, margin: 0 }}>Basic Information</h1>
+                    <p style={{ color: c.taupe, marginTop: 6, fontSize: 14 }}>Tell us about yourself</p>
+                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
-                <input
-                  type="number"
-                  value={formData.height}
-                  onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                  placeholder="170"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
-                <input
-                  type="number"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                  placeholder="70"
-                />
-              </div>
-            </div>
+            <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 32px' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, marginBottom: 8 }}>
+                            Full Name
+                        </label>
+                        <input
+                            type="text"
+                            name="full_name"
+                            value={formData.full_name}
+                            onChange={handleChange}
+                            required
+                            style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '10px 0', fontSize: 15, outline: 'none', backgroundColor: 'transparent' }}
+                        />
+                    </div>
 
-            <div className="flex gap-4 pt-4">
-              <button type="button" onClick={handleSkip} className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">
-                Skip
-              </button>
-              <button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50">
-                {loading ? 'Saving...' : 'Continue →'}
-              </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, marginBottom: 8 }}>
+                                Age
+                            </label>
+                            <input
+                                type="number"
+                                name="age"
+                                value={formData.age}
+                                onChange={handleChange}
+                                placeholder="e.g., 25"
+                                style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '10px 0', fontSize: 15, outline: 'none', backgroundColor: 'transparent' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, marginBottom: 8 }}>
+                                Gender
+                            </label>
+                            <select
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleChange}
+                                style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '10px 0', fontSize: 15, outline: 'none', backgroundColor: 'transparent' }}
+                            >
+                                <option value="">Select gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, marginBottom: 8 }}>
+                                Height (cm)
+                            </label>
+                            <input
+                                type="number"
+                                name="height"
+                                value={formData.height}
+                                onChange={handleChange}
+                                placeholder="e.g., 170"
+                                style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '10px 0', fontSize: 15, outline: 'none', backgroundColor: 'transparent' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: c.taupe, marginBottom: 8 }}>
+                                Weight (kg)
+                            </label>
+                            <input
+                                type="number"
+                                name="weight"
+                                value={formData.weight}
+                                onChange={handleChange}
+                                placeholder="e.g., 70"
+                                style={{ width: '100%', border: 'none', borderBottom: `2px solid ${c.dark}`, padding: '10px 0', fontSize: 15, outline: 'none', backgroundColor: 'transparent' }}
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
+                        <button
+                            type="button"
+                            onClick={handleSkip}
+                            style={{ flex: 1, backgroundColor: 'transparent', border: `1.5px solid ${c.peach}`, color: c.taupe, padding: '14px', fontSize: 14, cursor: 'pointer', borderRadius: 4 }}
+                        >
+                            Skip
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{ flex: 1, backgroundColor: c.dark, color: c.white, border: 'none', padding: '14px', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, borderRadius: 4 }}
+                        >
+                            {loading ? 'Saving...' : 'Continue →'}
+                        </button>
+                    </div>
+                </form>
             </div>
-          </form>
         </div>
-      </div>
-    </div>
-  )
+    )
 }
 
 export default BasicInfoPage

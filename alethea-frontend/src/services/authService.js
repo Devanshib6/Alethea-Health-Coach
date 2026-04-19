@@ -1,22 +1,16 @@
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8000/api/v1'
-
-const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    }
+const API = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 })
 
 // Add token to every request
-api.interceptors.request.use(
+API.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
         if (token) {
             config.headers.Authorization = `Bearer ${token}`
         }
-        console.log('Request:', config.method, config.url, 'Token:', token ? 'Present' : 'Missing')
         return config
     },
     (error) => {
@@ -24,14 +18,11 @@ api.interceptors.request.use(
     }
 )
 
-// Handle response errors
-api.interceptors.response.use(
-    (response) => {
-        return response
-    },
+// Add response interceptor to handle 401 errors
+API.interceptors.response.use(
+    (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            console.error('Auth error:', error.response?.data)
+        if (error.response?.status === 401) {
             localStorage.removeItem('token')
             window.location.href = '/login'
         }
@@ -39,37 +30,29 @@ api.interceptors.response.use(
     }
 )
 
-export const registerUser = async (full_name, email, password) => {
-    const response = await api.post('/auth/register', { full_name, email, password })
+export const loginUser = async (email, password) => {
+    const response = await API.post('/auth/login', { email, password })
     return response.data
 }
 
-export const loginUser = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password })
-    console.log('Login response:', response.data)
-    
-    // Store token
-    if (response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token)
-        console.log('Token stored successfully')
-    }
-    
+export const registerUser = async (full_name, email, password, role = 'user') => {
+    const response = await API.post('/auth/register', { full_name, email, password, role })
     return response.data
 }
 
 export const getMyProfile = async () => {
-    const response = await api.get('/users/me')
+    const response = await API.get('/users/me')
     return response.data
 }
 
-export const updateProfile = async (data) => {
-    const response = await api.put('/users/me', data)
+export const updateProfile = async (userData) => {
+    const response = await API.put('/users/me', userData)
     return response.data
 }
 
-export const logout = () => {
-    localStorage.removeItem('token')
-    window.location.href = '/login'
+export const deleteAccount = async () => {
+    const response = await API.delete('/users/me')
+    return response.data
 }
 
-export default api
+export default API

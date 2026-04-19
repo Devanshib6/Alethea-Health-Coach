@@ -1,45 +1,54 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { getMyProfile } from '../services/authService'
-import { useNavigate } from 'react-router-dom'
 
-const AuthContext = createContext()
+export const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null)
+    const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem('token')
-      if (token) {
-        try {
-          const userData = await getMyProfile()
-          setUser(userData)
-        } catch (error) {
-          localStorage.removeItem('token')
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (token) {
+            getMyProfile()
+                .then((data) => {
+                    setUser(data)
+                })
+                .catch((err) => {
+                    console.error('Error fetching profile:', err)
+                    localStorage.removeItem('token')
+                })
+                .finally(() => setLoading(false))
+        } else {
+            setLoading(false)
         }
-      }
-      setLoading(false)
+    }, [])
+
+    const login = (token, userData) => {
+        localStorage.setItem('token', token)
+        setUser(userData)
     }
-    loadUser()
-  }, [])
 
-  const login = (token, userData) => {
-    localStorage.setItem('token', token)
-    setUser(userData)
-  }
+    const logout = () => {
+        localStorage.removeItem('token')
+        setUser(null)
+    }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null)
-    // Redirect handled in component
-  }
+    const updateUser = (updatedData) => {
+        setUser(updatedData)
+    }
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  )
+    return (
+        <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+            {children}
+        </AuthContext.Provider>
+    )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+    const context = useContext(AuthContext)
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider')
+    }
+    return context
+}

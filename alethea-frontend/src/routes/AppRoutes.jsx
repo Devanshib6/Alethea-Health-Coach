@@ -1,7 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-// Pages
 import LandingPage from '../pages/LandingPage'
 import LoginPage from '../pages/LoginPage'
 import SignupPage from '../pages/SignupPage'
@@ -22,108 +20,137 @@ import AdminUserManagementPage from '../pages/AdminUserManagementPage'
 import FoodDatabasePage from '../pages/FoodDatabasePage'
 import SystemAnalyticsPage from '../pages/SystemAnalyticsPage'
 
-// Protected Route Component
-const ProtectedRoute = ({ children, requireProfile = false }) => {
-  const { user, loading } = useAuth()
-  
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-  
-  if (requireProfile && (!user.age || !user.goal)) {
-    return <Navigate to="/basic-info" replace />
-  }
-  
-  return children
+// Check if user has completed profile setup
+const isProfileComplete = (user) => {
+    return user && user.age && user.height && user.weight && user.goal && user.diet_type
 }
 
-// Admin Route Component
-const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth()
-  
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-  
-  if (user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />
-  }
-  
-  return children
-}
-
-// Public Route - Landing page is always accessible
-const PublicRoute = ({ children }) => {
-  const { user, loading } = useAuth()
-  const pathname = window.location.pathname
-  
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-  
-  // If user is logged in and trying to access login or signup, redirect to dashboard
-  if (user && (pathname === '/login' || pathname === '/signup')) {
-    if (user.role === 'admin') {
-      return <Navigate to="/admin/dashboard" replace />
+// Protected route with profile completion check
+const ProtectedRoute = ({ children }) => {
+    const { user, loading } = useAuth()
+    
+    if (loading) return <div>Loading...</div>
+    if (!user) return <Navigate to="/login" />
+    
+    if (!isProfileComplete(user)) {
+        return <Navigate to="/basic-info" />
     }
-    return <Navigate to="/dashboard" replace />
-  }
-  
-  return children
+    
+    return children
+}
+
+// Admin route
+const AdminRoute = ({ children }) => {
+    const { user, loading } = useAuth()
+    if (loading) return <div>Loading...</div>
+    if (!user) return <Navigate to="/login" />
+    if (user.role !== 'admin') return <Navigate to="/dashboard" />
+    return children
+}
+
+// Simple auth route
+const AuthRoute = ({ children }) => {
+    const { user, loading } = useAuth()
+    if (loading) return <div>Loading...</div>
+    if (!user) return <Navigate to="/login" />
+    return children
 }
 
 const AppRoutes = () => {
-  return (
-    <Routes>
-      {/* Landing page - always accessible */}
-      <Route path="/" element={<LandingPage />} />
-      
-      {/* Auth pages */}
-      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
-      
-      {/* User Routes (Protected) */}
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      
-      {/* Profile Setup */}
-      <Route path="/basic-info" element={<ProtectedRoute><BasicInfoPage /></ProtectedRoute>} />
-      <Route path="/goals-health" element={<ProtectedRoute><GoalsHealthPage /></ProtectedRoute>} />
-      <Route path="/dietary-preferences" element={<ProtectedRoute><DietaryPreferencesPage /></ProtectedRoute>} />
-      
-      {/* Meal Tracking */}
-      <Route path="/log-meal" element={<ProtectedRoute><LogMealPage /></ProtectedRoute>} />
-      <Route path="/meal-history" element={<ProtectedRoute><MealHistoryPage /></ProtectedRoute>} />
-      
-      {/* Diet Plan */}
-      <Route path="/diet-plan" element={<ProtectedRoute><DietPlanPage /></ProtectedRoute>} />
-      <Route path="/weekly-meal-plan" element={<ProtectedRoute><WeeklyMealPlanPage /></ProtectedRoute>} />
-      
-      {/* Health Analysis */}
-      <Route path="/health-prediction" element={<ProtectedRoute><HealthPredictionPage /></ProtectedRoute>} />
-      <Route path="/health-report" element={<ProtectedRoute><HealthReportPage /></ProtectedRoute>} />
-      
-      {/* Settings */}
-      <Route path="/profile-settings" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
-      <Route path="/app-settings" element={<ProtectedRoute><AppSettingsPage /></ProtectedRoute>} />
-      
-      {/* Admin Routes */}
-      <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
-      <Route path="/admin/users" element={<AdminRoute><AdminUserManagementPage /></AdminRoute>} />
-      <Route path="/admin/food-database" element={<AdminRoute><FoodDatabasePage /></AdminRoute>} />
-      <Route path="/admin/analytics" element={<AdminRoute><SystemAnalyticsPage /></AdminRoute>} />
-      
-      {/* 404 - Page Not Found */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  )
+    return (
+        <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            
+            {/* Profile Setup Routes */}
+            <Route path="/basic-info" element={
+                <AuthRoute>
+                    <BasicInfoPage />
+                </AuthRoute>
+            } />
+            <Route path="/goals-health" element={
+                <AuthRoute>
+                    <GoalsHealthPage />
+                </AuthRoute>
+            } />
+            <Route path="/dietary-preferences" element={
+                <AuthRoute>
+                    <DietaryPreferencesPage />
+                </AuthRoute>
+            } />
+            
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+                <ProtectedRoute>
+                    <DashboardPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/log-meal" element={
+                <ProtectedRoute>
+                    <LogMealPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/meal-history" element={
+                <ProtectedRoute>
+                    <MealHistoryPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/diet-plan" element={
+                <ProtectedRoute>
+                    <DietPlanPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/weekly-meal-plan" element={
+                <ProtectedRoute>
+                    <WeeklyMealPlanPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/health-prediction" element={
+                <ProtectedRoute>
+                    <HealthPredictionPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/health-report" element={
+                <ProtectedRoute>
+                    <HealthReportPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/profile-settings" element={
+                <ProtectedRoute>
+                    <ProfileSettingsPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/app-settings" element={
+                <ProtectedRoute>
+                    <AppSettingsPage />
+                </ProtectedRoute>
+            } />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={
+                <AdminRoute>
+                    <AdminDashboardPage />
+                </AdminRoute>
+            } />
+            <Route path="/admin/users" element={
+                <AdminRoute>
+                    <AdminUserManagementPage />
+                </AdminRoute>
+            } />
+            <Route path="/admin/food-database" element={
+                <AdminRoute>
+                    <FoodDatabasePage />
+                </AdminRoute>
+            } />
+            <Route path="/admin/analytics" element={
+                <AdminRoute>
+                    <SystemAnalyticsPage />
+                </AdminRoute>
+            } />
+        </Routes>
+    )
 }
 
 export default AppRoutes

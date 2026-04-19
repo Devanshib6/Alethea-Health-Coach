@@ -5,12 +5,12 @@ from app.core.database import Base
 import uuid
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "alethea_users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    full_name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)  # Changed from 'password' to 'password_hash'
-    full_name = Column(String, nullable=True)
+    password = Column(String, nullable=False)  # This was missing!
     role = Column(String, default="user")
     is_active = Column(Boolean, default=True)
     profile_pic = Column(String, nullable=True)
