@@ -3,14 +3,18 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-# Create engine with RLS support
+# Enable connection pooling with keepalive
 engine = create_engine(
     settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=3600,
+    pool_pre_ping=True,          # Check connection before using
+    pool_recycle=300,            # Recycle connections every 5 minutes
+    pool_size=5,                 # Max connections in pool
+    max_overflow=10,             # Extra connections beyond pool_size
     connect_args={
-        "sslmode": "require",
-        "options": "-c statement_timeout=30000"
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
     }
 )
 
@@ -21,8 +25,6 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
-        # Set user context for RLS
-        from app.api.deps import get_current_user
         yield db
     finally:
         db.close()

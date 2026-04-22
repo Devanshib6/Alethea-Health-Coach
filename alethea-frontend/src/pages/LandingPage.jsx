@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
+const c = {
+  dark: '#1a0405',
+  taupe: '#7a6058',
+  peach: '#d4a090',
+  white: '#ffffff',
+  cream: '#faf7f2',
+  charcoal: '#2c2c2c',
+}
+
 const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false)
 
@@ -11,47 +20,72 @@ const LandingPage = () => {
   }, [])
 
   const features = [
-    { icon: '🍽️', title: 'Smart Meal Tracking', desc: 'Log meals with AI-powered nutrition analysis' },
-    { icon: '🤖', title: 'AI Diet Plans', desc: 'Personalized meal plans based on your goals' },
-    { icon: '📊', title: 'Health Analytics', desc: 'Track your progress with beautiful insights' },
-    { icon: '🔮', title: 'Health Predictions', desc: 'AI forecasts your future health trends' },
-    { icon: '🎯', title: 'Goal Setting', desc: 'Set and achieve your wellness targets' },
-    { icon: '💪', title: 'Fitness Integration', desc: 'Sync with your daily activities' },
+    { title: 'Smart Meal Tracking', desc: 'Log meals with AI-powered nutrition analysis' },
+    { title: 'AI Diet Plans', desc: 'Personalized meal plans based on your goals' },
+    { title: 'Health Analytics', desc: 'Track your progress with beautiful insights' },
+    { title: 'Health Predictions', desc: 'AI forecasts your future health trends' },
+    { title: 'Goal Setting', desc: 'Set and achieve your wellness targets' },
+    { title: 'Fitness Integration', desc: 'Sync with your daily activities' },
   ]
 
   const stats = [
-    { value: '10K+', label: 'Active Users', icon: '👥' },
-    { value: '50K+', label: 'Meals Logged', icon: '🍲' },
-    { value: '95%', label: 'Satisfaction', icon: '⭐' },
+    { value: '10K+', label: 'Active Users' },
+    { value: '50K+', label: 'Meals Logged' },
+    { value: '95%', label: 'Satisfaction Rate' },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50">
+    <div style={{ minHeight: '100vh', backgroundColor: c.cream, fontFamily: "'Inter', system-ui, sans-serif" }}>
+      
       {/* Navbar */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">A</span>
+      <nav style={{
+        position: 'fixed',
+        top: 0,
+        width: '100%',
+        zIndex: 50,
+        transition: 'all 0.3s',
+        backgroundColor: scrolled ? c.white : 'transparent',
+        boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.05)' : 'none',
+        padding: '16px 0',
+      }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              backgroundColor: c.dark,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <span style={{ color: c.white, fontWeight: 800, fontSize: 18 }}>A</span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">Alethea</span>
-          </div>
+            <span style={{ fontSize: 22, fontWeight: 700, color: c.dark, letterSpacing: 1 }}>Alethea</span>
+          </Link>
           
-          <div className="hidden md:flex items-center space-x-8">
+          <div style={{ display: 'none', gap: 32, alignItems: 'center' }} className="nav-links">
             {['Features', 'How It Works', 'Testimonials'].map(item => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} className="text-gray-600 hover:text-indigo-600 transition-colors">
+              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} style={{ color: c.taupe, textDecoration: 'none', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
                 {item}
               </a>
             ))}
           </div>
           
-          <div className="flex items-center space-x-4">
-            {/* Sign In button - goes to Login page */}
-            <Link to="/login" className="text-gray-600 hover:text-indigo-600 transition-colors">
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <Link to="/login" style={{ color: c.taupe, textDecoration: 'none', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
               Sign In
             </Link>
-            {/* Get Started button - goes to Signup page */}
-            <Link to="/signup" className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white px-6 py-2 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+            <Link to="/signup" style={{
+              backgroundColor: c.dark,
+              color: c.white,
+              padding: '10px 24px',
+              borderRadius: 40,
+              textDecoration: 'none',
+              fontSize: 14,
+              fontWeight: 600,
+              transition: 'all 0.2s',
+            }}>
               Get Started
             </Link>
           </div>
@@ -59,41 +93,84 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-indigo-100 rounded-full mb-8">
-            <span className="text-indigo-600 text-sm font-semibold">✨ AI-Powered Health Coach</span>
+      <section style={{ padding: '120px 24px 80px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '6px 16px',
+            backgroundColor: `${c.peach}15`,
+            borderRadius: 40,
+            marginBottom: 24,
+          }}>
+            <span style={{ color: c.peach, fontSize: 13, fontWeight: 500 }}>AI-Powered Health Coach</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+          <h1 style={{
+            fontSize: 'clamp(40px, 6vw, 72px)',
+            fontWeight: 800,
+            letterSpacing: -2,
+            color: c.dark,
+            marginBottom: 20,
+            lineHeight: 1.1,
+          }}>
             Your Personal{' '}
-            <span className="bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
-              Nutrition
-            </span>
+            <span style={{ color: c.peach }}>Nutrition</span>
             <br />& Health Companion
           </h1>
           
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-10">
+          <p style={{
+            fontSize: 18,
+            color: c.taupe,
+            maxWidth: 600,
+            margin: '0 auto 32px',
+            lineHeight: 1.6,
+          }}>
             Track meals, get AI-powered diet plans, monitor health metrics, and predict future trends — all in one beautiful platform.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {/* Start Your Journey button - goes to Signup page */}
-            <Link to="/signup" className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/signup" style={{
+              backgroundColor: c.dark,
+              color: c.white,
+              padding: '14px 32px',
+              borderRadius: 50,
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: 15,
+              transition: 'all 0.2s',
+            }}>
               Start Your Journey Free →
             </Link>
-            <a href="#features" className="bg-white text-indigo-600 border-2 border-indigo-600 hover:bg-indigo-50 px-8 py-3 rounded-xl font-semibold transition-all">
+            <a href="#features" style={{
+              backgroundColor: 'transparent',
+              color: c.dark,
+              padding: '14px 32px',
+              borderRadius: 50,
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: 15,
+              border: `1.5px solid ${c.peach}`,
+              transition: 'all 0.2s',
+            }}>
               Learn More
             </a>
           </div>
 
           {/* Stats */}
-          <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+          <div style={{
+            marginTop: 60,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: 32,
+            maxWidth: 600,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}>
             {stats.map((stat, i) => (
-              <div key={i} className="text-center animate-float" style={{ animationDelay: `${i * 0.2}s` }}>
-                <div className="text-4xl mb-2">{stat.icon}</div>
-                <div className="text-3xl font-bold text-indigo-600">{stat.value}</div>
-                <div className="text-gray-500">{stat.label}</div>
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 32, fontWeight: 800, color: c.peach, marginBottom: 8 }}>{stat.value}</div>
+                <div style={{ color: c.taupe, fontSize: 14 }}>{stat.label}</div>
               </div>
             ))}
           </div>
@@ -101,19 +178,40 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Everything You Need</h2>
-            <p className="text-gray-600 text-lg">Powerful features to transform your health journey</p>
+      <section id="features" style={{ padding: '80px 24px', backgroundColor: c.white }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 700, color: c.dark, marginBottom: 12, letterSpacing: -1 }}>Everything You Need</h2>
+            <p style={{ color: c.taupe, fontSize: 18 }}>Powerful features to transform your health journey</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 32,
+          }}>
             {features.map((feature, i) => (
-              <div key={i} className="group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 border border-gray-100">
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-500">{feature.desc}</p>
+              <div key={i} style={{
+                padding: '28px',
+                backgroundColor: c.white,
+                borderRadius: 20,
+                border: `1px solid ${c.peach}15`,
+                transition: 'all 0.3s',
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  backgroundColor: `${c.peach}10`,
+                  borderRadius: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 20,
+                }}>
+                  <span style={{ fontSize: 20, color: c.peach, fontWeight: 600 }}>✦</span>
+                </div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: c.dark, marginBottom: 10 }}>{feature.title}</h3>
+                <p style={{ color: c.taupe, fontSize: 14, lineHeight: 1.6 }}>{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -121,26 +219,38 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-6 bg-gradient-to-r from-indigo-50 to-pink-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Simple 3-Step Process</h2>
-            <p className="text-gray-600 text-lg">Get started in minutes</p>
+      <section id="how-it-works" style={{ padding: '80px 24px', backgroundColor: `${c.peach}05` }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 700, color: c.dark, marginBottom: 12, letterSpacing: -1 }}>Simple 3-Step Process</h2>
+            <p style={{ color: c.taupe, fontSize: 18 }}>Get started in minutes</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: 48,
+          }}>
             {[
-              { step: '01', title: 'Create Account', desc: 'Sign up and set your health goals', icon: '📝' },
-              { step: '02', title: 'Track Meals', desc: 'Log what you eat with AI assistance', icon: '🍽️' },
-              { step: '03', title: 'Get Insights', desc: 'Receive personalized recommendations', icon: '📈' },
+              { step: '01', title: 'Create Account', desc: 'Sign up and set your health goals' },
+              { step: '02', title: 'Track Meals', desc: 'Log what you eat with AI assistance' },
+              { step: '03', title: 'Get Insights', desc: 'Receive personalized recommendations' },
             ].map((item, i) => (
-              <div key={i} className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <span className="text-3xl">{item.icon}</span>
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: 80,
+                  height: 80,
+                  backgroundColor: c.dark,
+                  borderRadius: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                }}>
+                  <span style={{ fontSize: 28, color: c.white, fontWeight: 700 }}>{item.step}</span>
                 </div>
-                <div className="text-5xl font-bold text-indigo-200 mb-2">{item.step}</div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-500">{item.desc}</p>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: c.dark, marginBottom: 10 }}>{item.title}</h3>
+                <p style={{ color: c.taupe, fontSize: 14 }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -148,24 +258,34 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">What Our Users Say</h2>
-            <p className="text-gray-600 text-lg">Real people, real results</p>
+      <section id="testimonials" style={{ padding: '80px 24px', backgroundColor: c.white }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 700, color: c.dark, marginBottom: 12, letterSpacing: -1 }}>What Our Users Say</h2>
+            <p style={{ color: c.taupe, fontSize: 18 }}>Real people, real results</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 32,
+          }}>
             {[
-              { name: 'Sarah Johnson', role: 'Fitness Enthusiast', text: 'Alethea has completely transformed my relationship with food. The AI recommendations are spot on!' },
-              { name: 'Michael Chen', role: 'Software Engineer', text: 'Lost 15kg in 3 months. The meal tracking is so easy and the diet plans are very practical.' },
-              { name: 'Dr. Emily Rodriguez', role: 'Nutritionist', text: 'I recommend Alethea to all my patients. The health predictions are surprisingly accurate.' },
+              { name: 'Priyanka Agarwal', role: 'Fitness Enthusiast', text: 'Alethea has completely transformed my relationship with food. The AI recommendations are spot on!' },
+              { name: 'Rahul Singhal', role: 'Software Engineer', text: 'Lost 15kg in 3 months. The meal tracking is so easy and the diet plans are very practical.' },
+              { name: 'Dr. Neha Bhandari', role: 'Nutritionist', text: 'I recommend Alethea to all my patients. The health predictions are surprisingly accurate.' },
             ].map((testimonial, i) => (
-              <div key={i} className="p-6 bg-gray-50 rounded-2xl">
-                <div className="text-yellow-400 text-xl mb-4">★★★★★</div>
-                <p className="text-gray-600 mb-4">"{testimonial.text}"</p>
-                <div className="font-semibold text-gray-800">{testimonial.name}</div>
-                <div className="text-sm text-gray-500">{testimonial.role}</div>
+              <div key={i} style={{
+                padding: '32px',
+                backgroundColor: `${c.peach}05`,
+                borderRadius: 20,
+                border: `1px solid ${c.peach}10`,
+                transition: 'all 0.3s',
+              }}>
+                <div style={{ color: c.peach, fontSize: 16, marginBottom: 20, letterSpacing: 1 }}>★ ★ ★ ★ ★</div>
+                <p style={{ color: c.taupe, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>"{testimonial.text}"</p>
+                <div style={{ fontWeight: 700, color: c.dark, fontSize: 16 }}>{testimonial.name}</div>
+                <div style={{ fontSize: 13, color: c.peach, marginTop: 4 }}>{testimonial.role}</div>
               </div>
             ))}
           </div>
@@ -173,33 +293,65 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center bg-gradient-to-r from-indigo-600 to-pink-600 rounded-3xl p-12 shadow-2xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      <section style={{ padding: '80px 24px' }}>
+        <div style={{
+          maxWidth: 900,
+          margin: '0 auto',
+          textAlign: 'center',
+          backgroundColor: c.dark,
+          borderRadius: 32,
+          padding: '60px 40px',
+        }}>
+          <h2 style={{ fontSize: 32, fontWeight: 700, color: c.white, marginBottom: 16, letterSpacing: -1 }}>
             Ready to Transform Your Health?
           </h2>
-          <p className="text-indigo-100 text-lg mb-8">
+          <p style={{ color: c.taupe, fontSize: 16, marginBottom: 32, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
             Join thousands of users already improving their lives with Alethea
           </p>
-          {/* Start Free Trial button - goes to Signup page */}
-          <Link to="/signup" className="bg-white text-indigo-600 px-8 py-3 rounded-xl font-semibold hover:shadow-xl transition-all inline-block">
+          <Link to="/signup" style={{
+            backgroundColor: c.white,
+            color: c.dark,
+            padding: '14px 36px',
+            borderRadius: 50,
+            textDecoration: 'none',
+            fontWeight: 600,
+            fontSize: 15,
+            display: 'inline-block',
+            transition: 'all 0.2s',
+          }}>
             Start Free Trial →
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">A</span>
+      <footer style={{ backgroundColor: c.dark, padding: '48px 24px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              backgroundColor: c.peach,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <span style={{ color: c.dark, fontWeight: 800 }}>A</span>
             </div>
-            <span className="text-xl font-bold">Alethea Health Coach</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: c.white }}>Alethea Health Coach</span>
           </div>
-          <p className="text-gray-400">© 2024 Alethea — Final Year Project</p>
+          <p style={{ color: c.taupe, fontSize: 13 }}>© 2024 Alethea — Final Year Project</p>
         </div>
       </footer>
+
+      <style>{`
+        @media (min-width: 768px) {
+          .nav-links {
+            display: flex;
+          }
+        }
+      `}</style>
     </div>
   )
 }

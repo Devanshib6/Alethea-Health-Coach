@@ -19,6 +19,8 @@ import AdminDashboardPage from '../pages/AdminDashboardPage'
 import AdminUserManagementPage from '../pages/AdminUserManagementPage'
 import FoodDatabasePage from '../pages/FoodDatabasePage'
 import SystemAnalyticsPage from '../pages/SystemAnalyticsPage'
+import AISnapPage from '../pages/AISnapPage'
+import VirtualCoachPage from '../pages/VirtualCoachPage'
 
 // Check if user has completed profile setup
 const isProfileComplete = (user) => {
@@ -125,6 +127,18 @@ const AppRoutes = () => {
             <Route path="/app-settings" element={
                 <ProtectedRoute>
                     <AppSettingsPage />
+                </ProtectedRoute>
+            } />
+            
+            {/* New Feature Routes */}
+            <Route path="/ai-snap" element={
+                <ProtectedRoute>
+                    <AISnapPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/virtual-coach" element={
+                <ProtectedRoute>
+                    <VirtualCoachPage />
                 </ProtectedRoute>
             } />
             
